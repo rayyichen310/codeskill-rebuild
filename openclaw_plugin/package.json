@@ -1,0 +1,26 @@
+{
+  "name": "codeskill-openclaw-sidecar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CODESKILL public OpenClaw native-summary permit sidecar",
+  "type": "module",
+  "files": [
+    "index.js",
+    "openclaw.plugin.json",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.js"
+    ],
+    "providers": [
+      "codeskill-r012"
+    ]
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.7.2 <2027.0.0"
+  }
+}

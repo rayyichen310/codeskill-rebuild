@@ -1,0 +1,2 @@
+# Preserve exact prompt/config bytes across Windows and Linux.
+* -text

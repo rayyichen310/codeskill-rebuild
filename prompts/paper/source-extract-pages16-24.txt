@@ -1,0 +1,382 @@
+=== PDF PAGE 16 ===
+Task-Level Skill Extraction Prompt
+System Prompt
+You are an expert at extracting reusable memory from bash-agent trajectories. Extract one reusable general skill from
+multiple related trajectories of a bash-based agent. Use only the provided evidence.
+Input
+The user prompt provides:
+• light task context
+• 2–3 related trajectories
+• optional result summaries
+Task
+Choose exactly one action:
+•generate: create one bootstrap skill
+•skip: create no skill
+Rules
+1. A bootstrap skill is a task-level reusable pattern supported by multiple trajectories. It must be broader than a single local
+event.
+2. Generate only if the pattern is reusable across similar tasks. Keep when_to_apply high-level and write transferable,
+actionablerules.
+3. Ground every part of the skill in repeated evidence from the trajectories and outcomes. Do not invent unsupported steps,
+checks, or guidance. If failed trajectories reveal reusable cautions, include them as cautionary rules.
+4. Skip if the evidence is weak, contradictory, accidental, too local, or collapses into an event-level reaction instead of a
+task-level pattern.
+5. Do not include repository names, issue descriptions, exact task goals, variable names, function names, class names,
+module names, exact file paths, or one-off literals.
+Output Schema
+generate
+{
+"action": "generate",
+"skill": {
+"title": "short reusable skill name",
+"granularity": "general",
+"when_to_apply": "high-level task situation where this skill should be used",
+"rules": ["reusable rule 1", "reusable rule 2"]
+}
+}
+skip
+{
+"action": "skip",
+"reason": "short reason"
+}
+Figure 6: Prompt template for task-level skill extraction.
+
+=== PDF PAGE 17 ===
+Event-Driven Skill Extraction Prompt
+System Prompt
+You are an expert at extracting reusable memory from bash-agent trajectories. Extract one reusable event-driven skill
+from a full trajectory of a bash-based agent. Use only the provided evidence.
+Input
+The user prompt provides:
+• light task context
+• one full trajectory
+• optional result summary
+Task
+Choose exactly one action:
+•generate: create one event-driven skill
+•skip: create no skill
+Rules
+1. An event-driven skill is a local trigger-response pattern. It must focus on one important event inside the trajectory and
+stay narrower than a whole-task workflow.
+2. Generate only if the event yields a reusable lesson beyond this exact task. Keep when_to_apply transferable and write
+local actionablerules.
+3. Ground the trigger and guidance in the trajectory and result. Do not invent an event that is not clearly present. Failure-
+derived cautions are valid if they are clearly supported.
+4. If multiple candidate events exist, choose the single most reusable one.
+5. Skip if there is no strong reusable local event, or if the lesson is too task-specific or workflow-level.
+6. Do not include repository names, issue descriptions, exact task goals, variable names, function names, class names,
+module names, exact file paths, or one-off literals.
+Output Schema
+generate
+{
+"action": "generate",
+"skill": {
+"title": "short reusable skill name",
+"granularity": "event-driven",
+"when_to_apply": "high-level local signal or situation where this skill should be used",
+"rules": ["reusable rule 1", "reusable rule 2"]
+}
+}
+skip
+{
+"action": "skip",
+"reason": "short reason"
+}
+Figure 7: Prompt template for event-driven skill extraction.
+
+=== PDF PAGE 18 ===
+Skill Evolution Prompt
+System Prompt
+You are an expert at extracting and revising reusable memory from bash-agent trajectories. You revise one existing reusable
+skill using new trajectory evidence from a bash-based agent. Use only the provided evidence.
+Input
+The user prompt provides:
+• one or more relevant skills
+• one trajectory
+• optional result summary
+Task
+Choose exactly one action:
+•evolve: revise exactly one existing skill
+•skip: make no revision
+Rules
+1. Alignment and need for revision.Choose evolve only when one existing skill is clearly aligned with the current
+trajectory context and trigger pattern, and the current trajectory result shows that this aligned skill should be revised. If
+multiple skills are aligned and all are plausible revision targets, choose the single one that is most worth revising based
+on the strength and reusability of the evidence. The revision should be motivated by the observed outcome, such as a
+missing case, missing check, bad ordering, misleading guidance, or reusable caution.
+2. Reusability and rule writing.Revise the skill only if the trajectory reveals a reusable missing case, missing check,
+better decision rule, improved ordering, or reusable caution. rules should contain the revised reusable core of the skill
+as actionable guidance.
+3.Applicability.when_to_applyshould remain at a high transferable level rather than concrete task text.
+4. Grounding.The revision must be directly supported by the provided trajectory and result. Do not add unsupported
+refinements.
+5.Identity preservation.Keep the same capability identity. Do not drift into a different skill.
+6. When to skip.Choose skip if the evidence is weak, contradictory, too local, or if the trajectory is better described as a
+brand-new skill rather than a revision.
+7. Do not include task-specific details.Do not include repository names, issue descriptions, exact task goals, variable
+names, function names, class names, module names, exact file paths, or one-off literals that only make sense for one
+instance.
+Output Schema
+evolve
+{
+"action": "evolve",
+"target_skill_id": "id of the single skill you chose to revise",
+"reason": "short reason",
+"skill": {
+"title": "short reusable skill name; same capability identity as target skill",
+"granularity": "general | event-driven",
+"when_to_apply": "high-level condition where this revised skill should be used",
+"rules": ["revised rule 1", "revised rule 2"]
+}
+}
+skip
+{
+"action": "skip",
+"reason": "short reason"
+}
+Figure 8: Prompt Template for skill evolution.
+
+=== PDF PAGE 19 ===
+Skill-Bank Maintenance Prompt
+System Prompt
+You are an expert at maintaining reusable memory for bash-based agents. You decide how a candidate reusable skill should
+enter the skill bank for a bash-based agent. Use only the provided candidate skill and retrieved similar skills.
+Input
+The user prompt provides:
+• 1 candidate skill
+• multiple retrieved similar skills
+Task
+Choose exactly one action:
+•add: accept the candidate as a new skill
+•merge: merge the candidate with exactly one retrieved skill
+•drop: reject the candidate
+Rules
+1.Add.Chooseaddwhen the candidate is reusable, coherent, and distinct from the retrieved skills.
+2. Merge.Choose merge when the candidate and one retrieved skill share the same capability identity and can be
+combined into one stronger reusable skill. The merged skill should have clearer applicability and cleaner rules with less
+duplication.
+3. Drop.Choose drop when the candidate is already covered by stronger retrieved skills, redundant, weakly evidenced,
+unsafe, too local, or too task-specific.
+4. Do not include task-specific details.No resulting skill may include repository names, issue descriptions, exact task
+goals, variable names, function names, class names, module names, exact file paths, or one-off literals that only make
+sense for one instance.
+Output Schema
+add
+{
+"action": "add",
+"reason": "short reason"
+}
+drop
+{
+"action": "drop",
+"reason": "short reason"
+}
+merge
+{
+"action": "merge",
+"merge_target_skill_id": "id of the retrieved skill selected for merge",
+"reason": "short reason",
+"skill": {
+"title": "short reusable skill name",
+"granularity": "general | event-driven",
+"when_to_apply": "high-level condition where this skill should be used",
+"rules": ["merged rule 1", "merged rule 2"]
+}
+}
+Schema requirements formerge.skill:
+•title: short reusable name; not task-specific.
+•when_to_apply: transferable applicability, not concrete task text.
+•rules: a non-empty list of reusable actionable rules.
+Figure 9: Prompt template for skill-bank maintenance.
+
+=== PDF PAGE 20 ===
+Task-Level Skill Quality Judge
+System Prompt
+You are an expert judge for skill-manager outputs. You are strict and critical by default. When in doubt, give a lower score.
+Task
+Judge a proposed bootstrap prior-knowledge output. The output should be a task-level reusable item withwhen_to_apply
+andrules, rather than a local event-trigger rule, one-step trick, or instance-specific note.
+Evaluation Input
+{{TRAJECTORY_EVIDENCE}}and{{PROPOSED_OUTPUT}}.
+Scoring Rule
+For each dimension, answer the listed sub-questions with yes or no. The score is the number of yes answers.
+Dimensions
+• groundedness, 0–3.Q1: every rule is directly traceable to observable trajectory behavior or outcome. Q2:
+when_to_applyis directly supported by trajectory signals. Q3: no rule is contradicted, absent, or weakly hinted.
+•reusability, 0–3.Q1: rules avoid repository names, file paths, versions, or identifiers. Q2: rules transfer to at least two
+distinct project types. Q3: applicability is broad enough for unseen repositories but not nearly every coding task.
+• specificity, 0–3.Q1: each rule gives a concrete executable action or check. Q2: rules add value beyond common
+engineering practice. Q3: rules would not equally apply to most unrelated coding tasks.
+•format_validity, 0–1.The output is valid and complete.
+• when_to_apply_quality, 0–3.Q1: applicability contains discriminating conditions. Q2: it would not trigger on clearly
+different tasks. Q3: it is narrow enough to avoid applying to most SWE tasks.
+• task_level_granularity, 0–3.Q1: the output is a multi-step workflow-level pattern. Q2: it can guide a new agent from
+the start of a similar task. Q3: it is not primarily a local reactive rule.
+Output Format
+{
+"groundedness": 0,
+"reusability": 0,
+"specificity": 0,
+"format_validity": 0,
+"when_to_apply_quality": 0,
+"task_level_granularity": 0,
+"reason": "short explanation citing specific evidence or lack thereof"
+}
+Figure 10: Rubric template for task-level skill quality judgment.
+
+=== PDF PAGE 21 ===
+Event-Driven Skill Quality Judge
+System Prompt
+You are an expert judge for skill-manager outputs. You are strict and critical by default. When in doubt, give a lower score.
+Task
+Judge a proposed event-driven prior-knowledge output. The output should capture one reusable local event and its
+trigger-response knowledge, rather than a whole-task workflow or instance-specific note.
+Evaluation Input
+{{TRAJECTORY_EVIDENCE}}and{{PROPOSED_OUTPUT}}.
+Scoring Rule
+For each dimension, answer the listed sub-questions with yes or no. The score is the number of yes answers.
+Dimensions
+• groundedness, 0–3.Q1: every rule is traceable to observable behavior or outcome. Q2: the trigger appears explicitly in
+the trajectory. Q3: no rule is contradicted, absent, or weakly hinted.
+• reusability, 0–3.Q1: rules avoid repository names, file paths, exact error text, or other non-transferable identifiers. Q2:
+rules apply to the same event type in distinct projects. Q3: the trigger can recur in unseen projects.
+• specificity, 0–3.Q1: each rule gives a concrete action or check. Q2: rules add event-specific value beyond generic
+debugging. Q3: rules would not apply to most unrelated local events.
+•format_validity, 0–1.The output is valid and complete.
+• when_to_apply_quality, 0–3.Q1: the trigger is specific and recognizable. Q2: it would not fire on unrelated local
+events. Q3: it is narrow enough to avoid frequent false triggers.
+• event_level_granularity, 0–3.Q1: the output focuses on one local trigger-response pattern. Q2: it is local and reactive
+rather than workflow-level. Q3: the trigger is distinguishable from other common events.
+Output Format
+{
+"groundedness": 0,
+"reusability": 0,
+"specificity": 0,
+"format_validity": 0,
+"when_to_apply_quality": 0,
+"event_level_granularity": 0,
+"reason": "short explanation citing specific evidence or lack thereof"
+}
+Figure 11: Rubric template for event-driven skill quality judgment.
+
+=== PDF PAGE 22 ===
+Skill Evolution Quality Judge
+System Prompt
+You are an expert judge for skill-manager outputs. You are strict and critical by default. When in doubt, give a lower score.
+Task
+Judge a proposed evolve update. The output should refine existing prior knowledge using new trajectory evidence, rather
+than paraphrase the old skill, drift to a new skill, or produce an instance-specific note.
+Evaluation Input
+{{SYSTEM_PROMPT}},{{EXISTING_PRIOR_KNOWLEDGE}},{{TRAJECTORY_EVIDENCE}}, and{{PROPOSED_OUTPUT}}.
+Scoring Rule
+For each dimension, answer the listed sub-questions with yes or no. The score is the number of yes answers.
+Dimensions
+• groundedness, 0–3.Q1: every changed rule is supported by new evidence. Q2: changed applicability is supported
+without unjustified broadening. Q3: no new claim is contradicted, absent, or weakly hinted.
+• reusability, 0–3.Q1: the update avoids one-off identifiers. Q2: changed guidance applies to distinct similar future
+situations. Q3: applicability lets a future agent decide when not to use the skill.
+• specificity, 0–3.Q1: changed rules give concrete actions, checks, orderings, or decision criteria. Q2: the update adds
+value beyond universal debugging. Q3: the guidance is domain-specific enough that unrelated domains would not fit.
+•format_validity, 0–1.The output is valid and complete.
+• failure_responsiveness, 0–3.Q1: new evidence reveals a failure, limitation, contradiction, missing case, or caution. Q2:
+the update directly addresses it. Q3: the update would change a future concrete decision.
+• update_quality, 0–3.Q1: the update preserves skill identity. Q2: it adds, corrects, narrows, or sharpens non-redundant
+content. Q3: the final skill is coherent and focused.
+Output Format
+{
+"groundedness": 0,
+"reusability": 0,
+"specificity": 0,
+"format_validity": 0,
+"failure_responsiveness": 0,
+"update_quality": 0,
+"reason": "short explanation"
+}
+Figure 12: Rubric template for skill evolution quality judgment.
+
+=== PDF PAGE 23 ===
+Skill-Bank Maintenance Merge Judge
+System Prompt
+You are an expert judge for skill-manager maintain outputs. You are strict and critical by default. When in doubt, give a
+lower score.
+The action under review is merge. The model decided to merge the candidate prior knowledge into one specific existing
+entry, identified bymerge_target_skill_id, producing a single mergedskillthat replaces the target.
+Note: maintain decisions are made without a trajectory. The input is the candidate prior-knowledge item and the existing
+prior-knowledge entries. Judge the merge purely on the textual evidence of the two sides and the merged result.
+Task
+Judge a proposed merge decision in skill-bank maintenance. The goal is to merge a candidate with one substantially
+overlapping existing entry, producing a stronger entry that preserves both sides’ useful content, avoids becoming an
+over-general umbrella, and remains high-quality reusable prior knowledge.
+Evaluation Input
+•{{CANDIDATE_PRIOR_KNOWLEDGE}}
+•{{EXISTING_PRIOR_KNOWLEDGE}}
+•{{PROPOSED_OUTPUT}}
+Scoring Rule
+For each dimension, answer the listed sub-questions with yes or no. The score is the number of yes answers. A yes requires
+clear evidence. When in doubt, answer no.
+Dimensions
+• target_choice_correct, 0–3.Q1: the chosen target’s when_to_apply directly matches the candidate’s trigger condition.
+Q2: the chosen target has the closest underlying capability among all existing entries. Q3: no other existing entry would
+be equally good or better.
+• target_overlap_substantive, 0–3.Q1: candidate and target have at least 30% conceptual rule overlap. Q2: their
+when_to_apply fields describe truly overlapping situations. Q3: keeping both separately would harm the bank through
+duplicate retrieval, conflict, or noise.
+• merge_integration_quality, 0–3.Q1: overlapping rules are deduplicated and consolidated. Q2: the merged
+when_to_applycovers both original trigger conditions. Q3: the merged skill is internally consistent.
+• identity_preserved, 0–3.Q1: the merged title preserves the target’s broad capability. Q2: the merged granularity
+matches or sensibly subsumes the target’s granularity. Q3: the merged skill would be retrieved in roughly the same
+situations as the original target.
+• no_critical_loss_target, 0–3.Q1: every actionable rule from the original target is preserved, absorbed, or correctly
+deduplicated. Q2: target-specific orderings, exceptions, or cautions remain represented. Q3: target edge cases and
+trigger qualifiers remain intact.
+• no_critical_loss_candidate, 0–3.Q1: every actionable rule from the candidate is preserved, absorbed, or deduplicated.
+Q2: the candidate’s distinctive insights are preserved or strengthened. Q3: candidate-specific trigger conditions are
+reflected in the merged result.
+• merged_when_to_apply_tightness, 0–3.Q1: the merged applicability is no broader than the union of candidate and
+target triggers. Q2: it retains enough cues for a future agent to decide when not to retrieve it. Q3: it contains no
+over-generalized trigger such as “any build issue” or “any failure with logs”.
+• format_validity, 0–1.The output is structurally valid for a merge decision, including a valid merge_target_skill_id,
+a present mergedskill, and required fieldstitle,granularity,when_to_apply, and non-emptyrules.
+Output Format
+{
+"target_choice_correct": 0,
+"target_overlap_substantive": 0,
+"merge_integration_quality": 0,
+"identity_preserved": 0,
+"no_critical_loss_target": 0,
+"no_critical_loss_candidate": 0,
+"merged_when_to_apply_tightness": 0,
+"format_validity": 0,
+"reason": "short explanation"
+}
+Figure 13: Rubric template for judging merge decisions in skill-bank maintenance.
+
+=== PDF PAGE 24 ===
+Behavior Alignment Judge
+System Prompt
+You are a strict judge evaluating whether an AI agent’s behavior reflects provided prior knowledge. Be conservative when
+in doubt. Prior knowledge that only restates general best practices is hard to credit.
+Task
+Judge whether a policy-model rollout actually reflects the provided prior knowledge. Alignment means the agent’s concrete
+actions and reasoning show that the prior knowledge specifically guided behavior, not merely that the agent was competent.
+Evaluation Input
+{{TASK_CONTEXT}}, {{USER_PROMPT}}, {{PRIOR_KNOWLEDGE}}, {{TRAJECTORY_EVIDENCE}}, and
+{{RESULT_SUMMARY}}.
+Scoring Dimensions
+• when_to_apply_match, 0–3.A: the task context falls within the stated condition. B: concrete trajectory evidence shows
+the applicable situation is present.
+• rule_specificity, 0–3.A: a specific non-trivial rule maps to a concrete action. B: the action is plausibly caused by the
+prior knowledge rather than generic competence. C: the agent follows the intended spirit of the rule.
+• trajectory_evidence, 0–3.A: reasoning explicitly reflects the prior knowledge. B: at least two distinct steps align with
+distinct rules. C: alignment is sustained rather than coincidental.
+Important Rules
+Do not reward task success, trajectory length, or apparent competence. Generic exploration does not earn credit unless the
+prior knowledge is specific and distinctive.
+Output Format
+{
+"when_to_apply_match": 0,
+"rule_specificity": 0,
+"trajectory_evidence": 0,
+"reason": "concise summary of the key factors driving your scores"
+}
+Figure 14: Rubric template for behavior alignment judgment.

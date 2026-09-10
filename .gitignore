@@ -1,0 +1,20 @@
+# Runtime artifacts remain on T2; track references and hashes instead.
+/runs/
+/cache/
+/evidence/
+/.venv*/
+/configs/model-endpoints.json
+/configs/development-manager-ledger.json
+/configs/*credentials*
+/configs/*secret*
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+/build/
+/dist/

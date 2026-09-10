@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "default_llm": "deepseek_flash",
+  "services": {
+    "deepseek_flash": {
+      "base_url": "http://127.0.0.1:8000/v1",
+      "model_id": "example-manager-model"
+    },
+    "qwen_9b": {
+      "base_url": "http://127.0.0.1:8001/v1",
+      "model_id": "example-solver-model"
+    }
+  },
+  "note": "Copy to the ignored model-endpoints.json and replace every example value for your deployment. Credentials and mutable runtime ledger are not tracked."
+}

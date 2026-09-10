@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "kind": "artifact_reference_index",
+  "claim": "Reference hashes only; completed run scheduling does not establish acceptance.",
+  "artifacts": [
+    {
+      "path": "runs/m2-common-bank-r009-20260907-01/manifest.json",
+      "sha256": "68f574f683ae6fabe4395bb73d17dd53fc7429105c5c6b5df8a1f76135084bb2",
+      "bytes": 10615
+    },
+    {
+      "path": "runs/m2-common-bank-r009-20260907-01/run-status.json",
+      "sha256": "d7377600ef87661b1405d71ae59551ecf7788ab86cac63b581c437222af303bb",
+      "bytes": 2484
+    },
+    {
+      "path": "runs/m2-common-bank-r009-20260907-01/bank_snapshots/final.json",
+      "sha256": "7a9cdf6eee6e18580c63df31a6b55f3157a588ec81e527362c25ebbba927dcea",
+      "bytes": 18270
+    },
+    {
+      "path": "runs/m2-context-stress-20260905-01/manifest.json",
+      "sha256": "865c8dde1cfc00d4b8f857860ec2c0d740eeaf8839d216afae69e259a3f64851",
+      "bytes": 2256
+    },
+    {
+      "path": "runs/m2-context-stress-20260905-01/run-status.json",
+      "sha256": "2ad1a80e92eabf1cd9e6873e76cc4b78a2460a068df0adc59bd98855d19a2c97",
+      "bytes": 281
+    },
+    {
+      "path": "runs/m2-context-stress-20260906-02/manifest.json",
+      "sha256": "151668026d0ff22bd0dc204f5d98f29d8ecd865cf05a91bef97dd7c17586a989",
+      "bytes": 2868
+    },
+    {
+      "path": "runs/m2-context-stress-20260906-02/run-status.json",
+      "sha256": "4a15fde154c1fbba5b8fbe198147916ca5b0c2aa182036ecd1288fc31d9da19b",
+      "bytes": 252
+    },
+    {
+      "path": "runs/m2-context-stress-20260906-03/manifest.json",
+      "sha256": "dc0abbe9a920252410a0a057ec989df0e5ee46aa9febd0afda7dc8bb59099b0a",
+      "bytes": 2863
+    },
+    {
+      "path": "runs/m2-context-stress-20260906-03/run-status.json",
+      "sha256": "4a42fb6241086393d3acd5e492f2398730167311240cb4a4cd1d9e0a5dc5024c",
+      "bytes": 271
+    },
+    {
+      "path": "runs/m2-context-stress-20260906-04/manifest.json",
+      "sha256": "36be8162b91bf999c4a88ef213805399ba5f14f07264c635f2933f70587a8bd8",
+      "bytes": 3101
+    },
+    {
+      "path": "runs/m2-context-stress-20260906-04/run-status.json",
+      "sha256": "ae9ef7a7548c86fbfb310d7e04cee0a7ab17f9270282062d4e6e74b63e8c888a",
+      "bytes": 191
+    },
+    {
+      "path": "runs/m2-full-descriptions-20260907-01/manifest.json",
+      "sha256": "62f9f917d444c4c17a192501084bf7e9b4c8a97be580bc36992b7ba7cbff4e45",
+      "bytes": 2049
+    },
+    {
+      "path": "runs/m2-full-descriptions-20260907-01/run-status.json",
+      "sha256": "abc098d182e90519454fd1a76b2371547b0e15a72478654233c1b17b19624f70",
+      "bytes": 263
+    },
+    {
+      "path": "runs/m2-offline-pilot-20260905-01/manifest.json",
+      "sha256": "b009a3b254d8b9a8930cba6bfa131a7cfb21f19a1b0dddfc9538e703ba00318d",
+      "bytes": 1839
+    },
+    {
+      "path": "runs/m2-offline-pilot-20260905-01/run-status.json",
+      "sha256": "abb11fcd04a63138756c49ced99064eba4eb944425260e5929485f207f1b08a3",
+      "bytes": 269
+    },
+    {
+      "path": "runs/m2-offline-pilot-20260905-01/bank_snapshots/final.json",
+      "sha256": "c223ce4231d3c9658b382b87cee916ed653bdf9cf8c74173005ca96616e59446",
+      "bytes": 4980
+    },
+    {
+      "path": "evidence/dataset/split-r004-frozen.json",
+      "sha256": "7650eeced6fdce5f07cc23647e7713310a4769c7a204ac9aade4d5278ef8fddc",
+      "bytes": 110320
+    },
+    {
+      "path": "evidence/parent-review/review-005/verification.json",
+      "sha256": "3265df74b8d167babbd2e2d1c0efd5d2e29cce9892208fff22866a5910ea41a1",
+      "bytes": 495
+    },
+    {
+      "path": "evidence/parent-review/review-005/full-source-descriptions.json",
+      "sha256": "cb7e26c4dbb8ce01ee8eae3121b560a84dd6c411eeb4f69dd858aab45a96421f",
+      "bytes": 5213
+    },
+    {
+      "path": "runs/m2-r010-arm-bank-derivation-20260907-02/manifest.json",
+      "sha256": "d280704d0143c7f0a68b41ccae90c24c36fed86b5e61da9241439726f966b5c4",
+      "bytes": 6801
+    },
+    {
+      "path": "runs/m2-r010-arm-bank-derivation-20260907-02/run-status.json",
+      "sha256": "1779ed74dc431f8eb1927fb9940eaf74aaf65042a851beb8eda8b0be9237d1e6",
+      "bytes": 297
+    },
+    {
+      "path": "evidence/parent-review/review-006/verification.json",
+      "sha256": "9f525b9b97e66c0d834229b520376a1c1de6df2dcc78a37fdc17669f5c6a1b5c",
+      "bytes": 366
+    },
+    {
+      "path": "evidence/parent-review/review-007/verification.json",
+      "sha256": "6eb55a3e449b9e332f95b7c4be1984b5d46deaf75d622babf2c6a7cb545982ec",
+      "bytes": 555
+    },
+    {
+      "path": "runs/m2-r011-calibration-20260908-02/manifest.json",
+      "sha256": "5e5f5d2c116c9aa1e0ed1f638e75cc7494d2f44d1c7792948974b7578eacfd1a",
+      "bytes": 13826
+    },
+    {
+      "path": "runs/m2-r011-calibration-20260908-02/run-status.json",
+      "sha256": "69147dd9e0b2e9f8544269a611720fa2584a60035cf409e80bcfcb2664766a66",
+      "bytes": 1621
+    },
+    {
+      "path": "runs/m2-r011-calibration-20260908-02/candidates/common-candidates.json",
+      "sha256": "6f337beafd6ee049a8a7a8a2eac42437eb110aee03f1919a80edc9c9d8f1d6a5",
+      "bytes": 9453
+    },
+    {
+      "path": "runs/m2-r011-calibration-20260908-02/bank_snapshots/arm-b-direct-candidates.json",
+      "sha256": "b93c0db716baf2a4d06a7ac1c2cbf1fb7c1821dcd479975cc245f14633a54997",
+      "bytes": 50366
+    },
+    {
+      "path": "runs/m2-r011-calibration-20260908-02/bank_snapshots/arm-c-maintained.json",
+      "sha256": "360d8c56a00baf559b48439fa33c17ad4a5552934c9871f45cf2ed2f502ef269",
+      "bytes": 55460
+    },
+    {
+      "path": "evidence/parent-review/review-010/r011-verification-v2.json",
+      "sha256": "091d55a6d9b17ef21a6d67153a34a752b4d26c64157367635b5fc4fa1981e602",
+      "bytes": 1385
+    },
+    {
+      "path": "evidence/connection/restart-job458-20260908.json",
+      "sha256": "10d8afc3bc62c78b434b4042bce5dcb0193b84b5041b4f56a7cfe4ff9c6ab080",
+      "bytes": 931
+    },
+    {
+      "path": "evidence/connection/readiness-job458-20260908.json",
+      "sha256": "d49ff59428c88da47825ee4cc2a01348179d39297af752e1721d29916f5298e4",
+      "bytes": 1896
+    },
+    {
+      "path": "evidence/parent-review/review-011/verification.json",
+      "sha256": "0f66167a0964549123fe989a6c95231825b8f48946f93e3175b9efad08d2fce7",
+      "bytes": 528
+    },
+    {
+      "path": "runs/m3-full-payload-tokenizer-20260909-01/manifest.json",
+      "sha256": "4cf196c9206ed737b3b8aeff4182254c638521e3356e45b51a4c7ee9dd396789",
+      "bytes": 50672
+    },
+    {
+      "path": "runs/m3-full-payload-tokenizer-20260909-01/run-status.json",
+      "sha256": "cc0fa148e8176db19b8bb801e79ede3afe050d5e0a7f1580e75a157eb9ed1d95",
+      "bytes": 476
+    },
+    {
+      "path": "runs/m3-full-payload-tokenizer-20260909-01/model_calls/call-0001/response.json",
+      "sha256": "c7bc77576d2d68e8e16e0914373733e3e20807cc498264ffb0541c76ca10109b",
+      "bytes": 3005
+    }
+  ]
+}

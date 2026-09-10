@@ -1,0 +1,17 @@
+{
+  "id": "codeskill-r012-sidecar",
+  "name": "CODESKILL R012 sidecar",
+  "description": "Binds OpenClaw session lifecycle evidence to a CODESKILL sidecar.",
+  "providers": ["codeskill-r012"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["permitDirectory", "trialId", "sessionId"],
+    "properties": {
+      "auditPath": { "type": "string", "minLength": 1 },
+      "permitDirectory": { "type": "string", "minLength": 1 },
+      "trialId": { "type": "string", "minLength": 1 },
+      "sessionId": { "type": "string", "minLength": 1 }
+    }
+  }
+}

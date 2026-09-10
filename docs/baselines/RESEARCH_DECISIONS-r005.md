@@ -1,0 +1,70 @@
+# 研究決策紀錄
+
+本檔由主 agent 維護，補充 REPRODUCTION_SPEC v0.3；不取代其 A01–A19 驗收。每項記錄區分決策與已執行結果。
+
+## R001 — 開發試跑的範圍與預算（2026-09-05，核定、未代表已執行）
+
+- M1 先送一個短推論 probe；M2 使用最多 4 條已授權 baseline source 做描述／抽取 pilot。
+- 此階段 manager 請求合計最多 30 次，包含格式修復與重試；每次 max_output_tokens 8192、timeout 300 秒、concurrency 1。記錄實際 tokens、延遲、重試與失敗。
+- 如果輸出或呼叫預算不足，保留原始失敗並回報主 agent。不可靜默截斷、把失敗改寫為 skip 或自行擴大試跑。
+- 這是有限的工程開發 profile；M3 live 任務與 M4 正式 72 trials 仍須先固定各自設定、題組與成本上限。
+- 不要求模型為了驗收硬湊相關 task group，亦不要求自然產生每一種 maintenance 分支。未觀察分支以 fixture 驗證功能並明示 live 未觀察；是否滿足 M2 由實際 evidence 判斷。
+
+理由：先驗證模型與新程式的真實協作路徑，再設定正式預算。此決策不降低完成條件，pilot 不計入 M4 分母。
+
+## R002 — 正式比較前必須固定的內容（2026-09-05，核對要求）
+
+Terra 提供候選 profile，主 agent 核定後另存不可變 manifest：
+
+1. Source、dev、held-out instance IDs、dataset 與 task hashes；source/dev 與 held-out 不重疊，跨 seed/arm 同題身分一致。
+2. 相容任務集合的建立方式與排除原因；以安裝／平台条件決定資格，不根據解題成敗或技能匹配程度選題。抽樣與任務順序的種子必須在結果前固定。
+3. Solver 與 manager 版本、tokenizer/template 指紋、temperature、seed 實際支援情況、context/output budget、timeout、steps/model-call limits、重試規則、總預算及中止規則。
+4. Task/event 檢索門檻與注入預算；門檻只能使用 source/dev 校準。不同 seed 的重複試驗若服務不支援可控 sampling seed，必須標為 replicate ID，不能宣稱相同隨機數控制。
+5. 三 arm 的執行順序與服務版本檢查；每一 instance 完成全部 arm/replicate 後才更新可供下一題使用的 bank。任何中途版本漂移要標示，不能默默合併為同一固定模型比較。
+
+主 agent 核對完成前，不開 M4 批次。這是內部研究決策點，不需要使用者重複批准既有授權。
+
+## R003 — 效果解讀邊界（2026-09-05，核定）
+
+M4 的 online bank 隨已完成題目更新，因此後題結果依賴前題經驗；兩個 replicate 也不是獨立新任務。主結果先呈現固定題序下的逐題配對差、完整成功／失敗分母及成本，稱為此小樣本 online protocol 的觀察。
+
+不可直接把 72 trials 當成 72 個獨立樣本計算一般成功率顯著性。即使以 instance 聚類，單一 online 題序仍有跨題依賴；若日後需要穩健不確定度或一般化效果，應另設獨立 bank／題序重複或 frozen-bank 實驗，不在本版偷偷改成其他 protocol。
+
+「注入成功」、「軌跡顯示遵循」與「官方 verifier 改善」分別報告；負結果或差異小也可完成既定比較，不能據此降低工程验收門檻。
+
+## R004 — 官方資料發現與分割（2026-09-05，核定、清單待產生）
+
+目前未找到完整本機官方 task checkout，故允許將官方 Harbor registry `terminal-bench/terminal-bench-2-1` 的 metadata/task packages 下載至本專案 cache，必要時使用官方 GitHub repo；保存 resolved revision/digest、任務檔 hash 與時間。這是唯讀取得任務資料，不等同執行 benchmark。
+
+- 先列 task IDs、task.toml、環境需求與檔案 hash。不得閱讀 solution 或 hidden verifier 內容來選題；不得以預計解題成敗、技能是否匹配或難度篩選。
+- 靜態相容條件：現有 Docker/Linux 可支援、不需新增 GPU 配置／私人憑證／額外特權；尚未支援的圖片輸入需列排除原因。不得先 pull 全量 Docker images 或試跑 solver 才選題。
+- 排除昨日全部 12 個 instance（包括 Spine、code-from-image 與 setup failure）；即使其中資料尚未進 source bank，也不放入 held-out。
+- 對剩餘 eligible canonical IDs，計算 UTF-8 字串 `codeskill-v1-20260905-split\n` + ID 的 SHA-256，其中 `\n` 為一個換行字元。依 digest 十六進位字典序排序，同分以 ID 排序；前 2 個作 dev，接下 12 個作 held-out，其餘記為未使用 reserve。
+- Terra 提交完整資格清單、理由與 hashes，主 agent 核對後凍結。少於 14 個則回報。後續安裝失敗保留為 infra，不以 reserve 默默替換；任何必要變更先記錄並判斷是否須重啟 protocol。
+
+來源：[官方執行文件](https://www.tbench.ai/docs/run-terminal-bench-2-1)、[官方資料 repo](https://github.com/harbor-framework/terminal-bench-2-1)、[Harbor registry 說明](https://www.harborframework.com/docs/run-jobs/run-evals)。此分割方法是我們的決定，並非 CODESKILL 論文原設定。
+
+### R004 執行紀錄：分割已固定，執行 profile 尚未固定
+
+官方 commit `7131e4375048a0e408a8fb404b5f499d726b695b`；89 題靜態盤點、70 題符合本版範圍。排除昨日 12 題及 7 個額外以視覺/OCR/影片輸入為主且尚未驗證多模態軌跡處理的任務；排除有逐項理由，不宣稱文字 agent 一定無法藉工具解題。產生圖像或處理數值模型本身不等於需要把圖片注入模型。
+
+- Dev：password-recovery、portfolio-optimization。
+- Held-out 固定順序：mailman、fix-code-vulnerability、prove-plus-comm、feal-differential-cryptanalysis、crack-7z-hash、distribution-search、hf-model-inference、vulnerable-secret、polyglot-rust-c、merge-diff-arc-agi-task、filter-js-from-html、install-windows-3.11。
+- Canonical ID 使用 task folder basename；官方 `terminal-bench/name` 與歷史來源須映射至同一 ID。
+- 完整清單：T2 `evidence/dataset/split-r004-frozen.json`，SHA-256 `7650eeced6fdce5f07cc23647e7713310a4769c7a204ac9aade4d5278ef8fddc`，保存 task tree OID、task.toml 與環境檔 hash。
+
+只有 task split 固定；Docker image digest、solver/manager profile、檢索門檻與實際安裝/live 閉環仍待驗證。此清單不能單獨作為 M4 開跑或通過依據。
+
+## R005 — 首次 M2 結果後的開發修正與來源擴展（核定）
+
+首批 4 條來源產生 4 個描述；fix-git anchor 的配對回覆 no_related_group。Event 抽取與 maintenance add 真實執行，但主 agent 發現候選覆蓋整題工作流程，且缺少 D04 要求的 trigger/response/outcome step sidecar。這些結果保留，不標成 event 品質通過；no_related_group 也不代表整個 10 條來源池都沒有可用組合。
+
+- 在 runtime/custom prompt 補齊原本 D04 的證據欄位與局部事件要求，保留 paper prompt 原文及 delta；不手寫技能、不強迫 generate，不將舊輸出補寫成新模型證據。
+- D01 task_family 應是可重用的活動類型，而非直接複製 instance ID。若修改描述 prompt，對本次來源一致重新描述，版本與原始結果都保存，避免只修理不利的配對。
+- 允許擴展至既定 10 條文字 baseline 初始來源，均為既有已授權歷史資料，不重跑 source。這是完成本已規劃來源池，沒有增加正式題數或接觸 held-out 結果。
+- 開發 generation calls 總上限由 R001 的 30 調整為 60，累計包含先前 2 probes、首批 7 calls、修復、正常與 stress calls；每次 output 8192、timeout 300 秒、concurrency 1 不變。這不是正式 M4 的預算。
+- 四來源 no_related_group 保留；完整池仍無適當組合時回報，不把單軌跡當 task 抽取或降低相關性要求。先跑配對與抽取再看證據，不預設一定有 task skill。
+- D03 壓力測試用獨立 run：對已實測約 19,954 input tokens 的 event request 設 development context 24,000（8192 output + 4096 margin，input allowance 11,712），按 action-observation 邊界分段、真實 step-ID summaries、再最終抽取，初始最多 4 個額外 calls。它只測超長處理機制，不代表實際服務塞不下，也不支持壓縮提升品質的結論。
+- Pilot bank 和舊 prompt 結果保留為開發 evidence；正式初始 B/C bank 必須使用同一固定新版流程、一致生成的共同候選。不得手動只刪低分候選來美化正式效果。
+
+對應 A02/A03/A04/A18。此修正發生於任何新 development/held-out solver 結果之前，正式評估分割保持不變。

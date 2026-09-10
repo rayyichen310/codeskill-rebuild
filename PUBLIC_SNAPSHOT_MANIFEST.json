@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "kind": "codeskill_rebuild_public_snapshot",
+  "source_commit": "7cca2a11b499723c0e42ba5d69893908fbcf10b4",
+  "generated_at_utc": "2026-09-10T23:47:15.620627+00:00",
+  "included_tracked_files": [
+    ".gitattributes",
+    ".gitignore",
+    "README.md",
+    "artifacts/provenance-index.json",
+    "audit_prior_traces.py",
+    "configs/manager-requirements.freeze.txt",
+    "configs/model-endpoints.example.json",
+    "docs/CONNECTIONS.md",
+    "docs/DELEGATION.md",
+    "docs/IMPLEMENTATION_STATUS.md",
+    "docs/M3_CONTROLLED_INTEGRATION_001.md",
+    "docs/M3_DEVELOPMENT_PROFILE.md",
+    "docs/PARENT_REVIEW_001.md",
+    "docs/PARENT_REVIEW_003.md",
+    "docs/PARENT_REVIEW_004.md",
+    "docs/PARENT_REVIEW_008.md",
+    "docs/PARENT_REVIEW_010.md",
+    "docs/REPRODUCTION_SPEC.md",
+    "docs/RESEARCH_DECISIONS.md",
+    "docs/STATUS.md",
+    "docs/TRACE_REUSE.md",
+    "docs/VERSION_CONTROL.md",
+    "docs/baselines/REPRODUCTION_SPEC-v0.10.md",
+    "docs/baselines/REPRODUCTION_SPEC-v0.2.md",
+    "docs/baselines/REPRODUCTION_SPEC-v0.3.md",
+    "docs/baselines/REPRODUCTION_SPEC-v0.4.md",
+    "docs/baselines/REPRODUCTION_SPEC-v0.5.md",
+    "docs/baselines/REPRODUCTION_SPEC-v0.6.md",
+    "docs/baselines/REPRODUCTION_SPEC-v0.7.md",
+    "docs/baselines/REPRODUCTION_SPEC-v0.8.md",
+    "docs/baselines/REPRODUCTION_SPEC-v0.9.md",
+    "docs/baselines/RESEARCH_DECISIONS-r001-r003.md",
+    "docs/baselines/RESEARCH_DECISIONS-r001-r004-discovery.md",
+    "docs/baselines/RESEARCH_DECISIONS-r004-split-frozen.md",
+    "docs/baselines/RESEARCH_DECISIONS-r005.md",
+    "docs/baselines/RESEARCH_DECISIONS-r006.md",
+    "docs/baselines/RESEARCH_DECISIONS-through-R008.md",
+    "docs/baselines/RESEARCH_DECISIONS-through-R009.md",
+    "docs/baselines/RESEARCH_DECISIONS-through-R010.md",
+    "docs/baselines/RESEARCH_DECISIONS-through-R011.md",
+    "openclaw_plugin/README.md",
+    "openclaw_plugin/index.js",
+    "openclaw_plugin/openclaw.plugin.json",
+    "openclaw_plugin/package.json",
+    "prompts/custom/README.md",
+    "prompts/custom/m2_description.md",
+    "prompts/custom/m2_event_evidence_repair.md",
+    "prompts/custom/m2_event_evidence_sidecar.md",
+    "prompts/custom/m2_evidence_compaction.md",
+    "prompts/custom/m2_evidence_compaction_v2.md",
+    "prompts/custom/m2_task_pairing.md",
+    "prompts/paper/README.md",
+    "prompts/paper/fig06_task_extraction.md",
+    "prompts/paper/fig07_event_extraction.md",
+    "prompts/paper/fig08_evolution.md",
+    "prompts/paper/fig09_maintenance.md",
+    "prompts/paper/source-extract-pages16-24.txt",
+    "prompts/runtime/README.md",
+    "pyproject.toml",
+    "scripts/audit_m2_r012_no_related_group.py",
+    "scripts/audit_m3_r012_supplied_evolution.py",
+    "scripts/compare_chat_tokenizer.py",
+    "scripts/create_public_snapshot.py",
+    "scripts/derive_r010_common_banks.py",
+    "scripts/import_m2_sources.py",
+    "scripts/load_minilm.py",
+    "scripts/m1_manager_probe.py",
+    "scripts/plan_m3_r012_instance_freeze.py",
+    "scripts/probe_server_tokenizer.py",
+    "scripts/rerun_m2_event_with_evidence.py",
+    "scripts/run_m2_common_bank_r009.py",
+    "scripts/run_m2_context_stress.py",
+    "scripts/run_m2_context_stress_projected_final.py",
+    "scripts/run_m2_context_stress_r007.py",
+    "scripts/run_m2_context_stress_retry.py",
+    "scripts/run_m2_full_descriptions.py",
+    "scripts/run_m2_pilot.py",
+    "scripts/run_m2_r011_calibration.py",
+    "scripts/run_m2_r012_event_extraction.py",
+    "scripts/run_m3_full_payload_tokenizer_probe.py",
+    "scripts/run_m3_r012_lifecycle.py",
+    "scripts/run_openclaw_r012_fake_cli_probe.py",
+    "scripts/run_openclaw_r012_official_release_compat.py",
+    "scripts/run_openclaw_r012_sidecar.py",
+    "src/codeskill_rebuild/__init__.py",
+    "src/codeskill_rebuild/arm_banks.py",
+    "src/codeskill_rebuild/bank.py",
+    "src/codeskill_rebuild/compaction.py",
+    "src/codeskill_rebuild/context.py",
+    "src/codeskill_rebuild/event_extraction.py",
+    "src/codeskill_rebuild/evolution.py",
+    "src/codeskill_rebuild/manager.py",
+    "src/codeskill_rebuild/manager_projection.py",
+    "src/codeskill_rebuild/native_compaction_common.py",
+    "src/codeskill_rebuild/openclaw_compaction.py",
+    "src/codeskill_rebuild/openclaw_native_summary.py",
+    "src/codeskill_rebuild/openclaw_overlay.py",
+    "src/codeskill_rebuild/openclaw_proxy.py",
+    "src/codeskill_rebuild/openclaw_sidecar_retrieval.py",
+    "src/codeskill_rebuild/pairing_audit.py",
+    "src/codeskill_rebuild/pipeline.py",
+    "src/codeskill_rebuild/r012_execution.py",
+    "src/codeskill_rebuild/r012_runtime.py",
+    "src/codeskill_rebuild/retrieval.py",
+    "src/codeskill_rebuild/runtime.py",
+    "src/codeskill_rebuild/solver_probe.py",
+    "src/codeskill_rebuild/sqlite_compaction.py",
+    "src/codeskill_rebuild/traces.py",
+    "src/codeskill_rebuild/trial_schedule.py",
+    "src/codeskill_rebuild/types.py",
+    "tests/__init__.py",
+    "tests/test_arm_banks.py",
+    "tests/test_bank_runtime.py",
+    "tests/test_compaction.py",
+    "tests/test_manager.py",
+    "tests/test_manager_projection.py",
+    "tests/test_openclaw_compaction.py",
+    "tests/test_openclaw_official_release_compat.py",
+    "tests/test_openclaw_overlay.py",
+    "tests/test_openclaw_plugin_package.py",
+    "tests/test_openclaw_proxy.py",
+    "tests/test_openclaw_sidecar_retrieval.py",
+    "tests/test_openclaw_sidecar_runner.py",
+    "tests/test_public_snapshot.py",
+    "tests/test_r012_entrypoints.py",
+    "tests/test_r012_execution.py",
+    "tests/test_r012_lifecycle.py",
+    "tests/test_retrieval.py",
+    "tests/test_solver_probe.py",
+    "tests/test_traces.py",
+    "validation/r013-packaging-full-test-20260910.log",
+    "validation/r014-corrections-full-test-20260911.log",
+    "validation/r014-final-corrections-full-test-20260911.log",
+    "validation/r014-long-trace-full-test-20260911.log",
+    "validation/r014-public-packaging-full-test-20260911.log"
+  ],
+  "excluded_categories": [
+    "private_git_history",
+    "untracked_files",
+    "ignored_runtime_artifacts",
+    "credentials"
+  ],
+  "sanitization": {
+    "replacement_count": 117,
+    "files": [
+      {
+        "path": "audit_prior_traces.py",
+        "replacement_count": 2
+      },
+      {
+        "path": "docs/CONNECTIONS.md",
+        "replacement_count": 20
+      },
+      {
+        "path": "docs/DELEGATION.md",
+        "replacement_count": 3
+      },
+      {
+        "path": "docs/PARENT_REVIEW_004.md",
+        "replacement_count": 1
+      },
+      {
+        "path": "docs/REPRODUCTION_SPEC.md",
+        "replacement_count": 7
+      },
+      {
+        "path": "docs/STATUS.md",
+        "replacement_count": 8
+      },
+      {
+        "path": "docs/TRACE_REUSE.md",
+        "replacement_count": 3
+      },
+      {
+        "path": "docs/baselines/REPRODUCTION_SPEC-v0.10.md",
+        "replacement_count": 7
+      },
+      {
+        "path": "docs/baselines/REPRODUCTION_SPEC-v0.2.md",
+        "replacement_count": 7
+      },
+      {
+        "path": "docs/baselines/REPRODUCTION_SPEC-v0.3.md",
+        "replacement_count": 7
+      },
+      {
+        "path": "docs/baselines/REPRODUCTION_SPEC-v0.4.md",
+        "replacement_count": 7
+      },
+      {
+        "path": "docs/baselines/REPRODUCTION_SPEC-v0.5.md",
+        "replacement_count": 7
+      },
+      {
+        "path": "docs/baselines/REPRODUCTION_SPEC-v0.6.md",
+        "replacement_count": 7
+      },
+      {
+        "path": "docs/baselines/REPRODUCTION_SPEC-v0.7.md",
+        "replacement_count": 7
+      },
+      {
+        "path": "docs/baselines/REPRODUCTION_SPEC-v0.8.md",
+        "replacement_count": 7
+      },
+      {
+        "path": "docs/baselines/REPRODUCTION_SPEC-v0.9.md",
+        "replacement_count": 7
+      },
+      {
+        "path": "scripts/compare_chat_tokenizer.py",
+        "replacement_count": 1
+      },
+      {
+        "path": "scripts/m1_manager_probe.py",
+        "replacement_count": 1
+      },
+      {
+        "path": "scripts/probe_server_tokenizer.py",
+        "replacement_count": 1
+      },
+      {
+        "path": "scripts/run_openclaw_r012_fake_cli_probe.py",
+        "replacement_count": 1
+      },
+      {
+        "path": "tests/test_public_snapshot.py",
+        "replacement_count": 6
+      }
+    ]
+  },
+  "safety_scan": {
+    "tracked_file_size_limit_bytes": 2097152,
+    "raw_artifact_suffixes_checked": [
+      ".db",
+      ".har",
+      ".jsonl",
+      ".pcap",
+      ".pcapng",
+      ".sqlite",
+      ".sqlite3"
+    ],
+    "secret_pattern_matches": 0
+  }
+}
