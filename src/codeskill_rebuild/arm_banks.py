@@ -17,6 +17,7 @@ from .types import canonical_instance_id, canonical_json, sha256_text
 
 
 SCHEMA_FIELDS = ("title", "granularity", "when_to_apply", "rules", "benchmark")
+OPTIONAL_SCHEMA_FIELDS = ("code_examples",)
 
 
 class SkillEncoder(Protocol):
@@ -30,7 +31,11 @@ def exact_skill_schema(skill: dict[str, Any]) -> dict[str, Any]:
     missing = [field for field in SCHEMA_FIELDS if field not in skill]
     if missing:
         raise BankError(f"candidate is missing schema fields: {missing}")
-    return {field: deepcopy(skill[field]) for field in SCHEMA_FIELDS}
+    result = {field: deepcopy(skill[field]) for field in SCHEMA_FIELDS}
+    for field in OPTIONAL_SCHEMA_FIELDS:
+        if field in skill:
+            result[field] = deepcopy(skill[field])
+    return result
 
 
 def _source_ids(record: dict[str, Any]) -> tuple[list[str], list[str]]:

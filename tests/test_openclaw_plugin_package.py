@@ -11,6 +11,7 @@ class OpenClawPluginPackageTest(unittest.TestCase):
         manifest = json.loads((root / "openclaw.plugin.json").read_text(encoding="utf-8"))
         package = json.loads((root / "package.json").read_text(encoding="utf-8"))
         source = (root / "index.js").read_text(encoding="utf-8")
+        lifecycle_source = (root / "lifecycle-record.js").read_text(encoding="utf-8")
         self.assertEqual(manifest["id"], "codeskill-r012-sidecar")
         self.assertEqual(manifest["providers"], ["codeskill-r012"])
         self.assertEqual(
@@ -18,6 +19,12 @@ class OpenClawPluginPackageTest(unittest.TestCase):
             {"permitDirectory", "trialId", "sessionId"},
         )
         self.assertIn("openclaw", package["peerDependencies"])
+        self.assertIn("lifecycle-record.js", package["files"])
+        self.assertIn('from "./lifecycle-record.js"', source)
+        self.assertIn("LIFECYCLE_DIRECTORY_MODE = 0o2770", lifecycle_source)
+        self.assertIn("LIFECYCLE_RECORD_MODE = 0o640", lifecycle_source)
+        self.assertIn("chmodSync(permitDirectory, LIFECYCLE_DIRECTORY_MODE)", lifecycle_source)
+        self.assertIn("chmodSync(auditPath, 0o640)", source)
         self.assertIn('api.on("before_compaction"', source)
         self.assertIn("writeNativeSummaryPermit", source)
         self.assertIn("writeNormalCallBoundary", source)

@@ -398,7 +398,12 @@ def main() -> None:
                     messages=maintenance_messages(candidate["skill"], retrieved, paper_prompt=maintenance_prompt),
                     call_metadata={"phase": "R011_P07_arm_c_maintenance", "prompt": file_ref(maintenance_prompt_path), "candidate": candidate, "retrieval": file_ref(retrieval_path), "bank_snapshot_before": arm_c.snapshot(), "old_r009_maintenance_reuse": "not claimed: R011 constructs an independent ordered C bank"},
                 )
-                decision = validate_maintenance(call["json"], candidate=candidate["skill"], retrieved_skill_ids={item["skill_id"] for item in retrieved})
+                decision = validate_maintenance(
+                    call["json"],
+                    candidate=candidate["skill"],
+                    retrieved_skill_ids={item["skill_id"] for item in retrieved},
+                    retrieved_skills=retrieved,
+                )
                 operation = arm_c.apply_and_save(arm_c_path, operation_id=f"r011-maintenance-{ordinal:03d}-{call['call_id']}", decision=decision["action"], candidate=decision.get("skill", candidate["skill"]), source_instance_ids=candidate["source_instance_ids"], evidence={"candidate": candidate, "maintenance_model_call_id": call["call_id"], "retrieval": file_ref(retrieval_path)}, merge_target_id=decision.get("merge_target_skill_id"))
                 maintenance_operations += 1
                 write_json(operation_path, {"kind": "live_manager_r011_maintenance", "candidate": candidate, "model_call_id": call["call_id"], "model_decision": decision, "operation": operation, "bank_snapshot_after": arm_c.snapshot()})

@@ -256,7 +256,10 @@ def main() -> None:
                 },
             )
             decision = validate_maintenance(
-                call["json"], candidate=candidate, retrieved_skill_ids={skill["skill_id"] for skill in retrieved}
+                call["json"],
+                candidate=candidate,
+                retrieved_skill_ids={skill["skill_id"] for skill in retrieved},
+                retrieved_skills=retrieved,
             )
         except BaseException as error:
             failure = {"phase": "maintenance", "ordinal": ordinal, "kind": kind, "candidate_record": str(candidate_record), **call_failure(error)}

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 from copy import deepcopy
@@ -23,9 +24,31 @@ def file_ref(path: Path) -> dict[str, str]:
 def capture_source_snapshot(*, project_root: Path, run_dir: Path, relative_paths: list[str]) -> dict[str, Any]:
     code = run_dir / "code"
     code.mkdir(parents=True, exist_ok=True)
-    status = subprocess.run(["git", "status", "--porcelain=v1"], cwd=project_root, check=True, text=True, capture_output=True).stdout
-    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=project_root, check=True, text=True, capture_output=True).stdout.strip()
-    patch = subprocess.run(["git", "diff", "--binary", "HEAD"], cwd=project_root, check=True, text=True, capture_output=True).stdout
+    try:
+        status = subprocess.run(["git", "status", "--porcelain=v1"], cwd=project_root, check=True, text=True, capture_output=True).stdout
+        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=project_root, check=True, text=True, capture_output=True).stdout.strip()
+        patch = subprocess.run(["git", "diff", "--binary", "HEAD"], cwd=project_root, check=True, text=True, capture_output=True).stdout
+        provenance = {"kind": "git_checkout", "head": head, "dirty": bool(status)}
+    except (OSError, subprocess.CalledProcessError) as error:
+        # A deployment may intentionally be a source-only Git archive, so it
+        # cannot manufacture a Git checkout merely to run a tokenizer probe.
+        # Preserve that limitation and bind the probe to a caller-supplied
+        # immutable source revision plus the copied files below.
+        source_revision = os.environ.get("CODESKILL_SOURCE_REVISION", "").strip()
+        if not source_revision:
+            raise RuntimeError(
+                "source-only deployment needs CODESKILL_SOURCE_REVISION; refusing to label an archive as a Git checkout"
+            ) from error
+        status = ""
+        patch = ""
+        head = f"archive:{source_revision}"
+        provenance = {
+            "kind": "source_only_archive",
+            "source_revision": source_revision,
+            "git_metadata_unavailable": True,
+            "git_error_type": type(error).__name__,
+            "git_error": str(error),
+        }
     (code / "working-tree-status.txt").write_text(status, encoding="utf-8")
     (code / "working-tree.patch").write_text(patch, encoding="utf-8")
     snapshots: list[dict[str, Any]] = []
@@ -40,6 +63,7 @@ def capture_source_snapshot(*, project_root: Path, run_dir: Path, relative_paths
     return {
         "head": head,
         "dirty": bool(status),
+        "provenance": provenance,
         "working_tree_status": file_ref(code / "working-tree-status.txt"),
         "working_tree_patch": file_ref(code / "working-tree.patch"),
         "complete_relevant_source_snapshot": snapshots,
@@ -97,8 +121,8 @@ def main() -> None:
         raise FileExistsError(args.run_dir)
     project_root = Path(__file__).resolve().parents[1]
     contract = contract_from_files(args.spec, args.decisions)
-    if contract.get("version") != "v0.10":
-        raise ValueError(f"M3 profile 001 requires v0.10 contract; found {contract}")
+    if contract.get("version") != "v0.12":
+        raise ValueError(f"M3 profile 001 requires the current v0.12 contract; found {contract}")
     service = json.loads(args.config.read_text(encoding="utf-8"))["services"]["deepseek_flash"]
     payload = synthetic_payload(service["model_id"])
     args.run_dir.mkdir(parents=True)
@@ -110,7 +134,7 @@ def main() -> None:
             "src/codeskill_rebuild/solver_probe.py",
             "src/codeskill_rebuild/types.py",
             "configs/model-endpoints.json",
-            "docs/M3_DEVELOPMENT_PROFILE.md",
+            "docs/archive/M3_DEVELOPMENT_PROFILE.md",
         ],
     )
     contract_snapshot = write_contract_snapshot(args.run_dir, args.spec, args.decisions, contract)

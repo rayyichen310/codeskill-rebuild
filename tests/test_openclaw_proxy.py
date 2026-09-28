@@ -600,6 +600,30 @@ class DurableProxyTest(unittest.TestCase):
         self.assertEqual(transport.payloads, [])
         self.assertEqual(rejection["proxy_outcome"], "output_limit_rejected")
 
+    def test_output_cap_accepts_openai_max_completion_tokens(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            transport = FakeTransport(chunks=[b'{"choices":[]}'])
+            service = self.make_service(root, transport)
+            service.max_output_tokens = 16_384
+            payload = {"messages": [user()], "max_completion_tokens": 16_384}
+            list(service.forward(payload).iter_bytes())
+        self.assertEqual(transport.payloads, [payload])
+
+    def test_output_cap_rejects_an_invalid_openai_max_completion_tokens(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            transport = FakeTransport(chunks=[b"unused"])
+            service = self.make_service(root, transport)
+            service.max_output_tokens = 16_384
+            response = service.forward({"messages": [user()], "max_completion_tokens": 16_385})
+            raw = b"".join(response.iter_bytes())
+            rejection = read_json(root / "evidence" / "upstream_requests" / "attempt-0001.json")
+        self.assertEqual(response.status, 400)
+        self.assertEqual(json.loads(raw)["error"]["code"], "codeskill_max_tokens_exceeded")
+        self.assertEqual(transport.payloads, [])
+        self.assertEqual(rejection["limit_details"]["requested_max_completion_tokens"], 16_385)
+
     def test_expired_trial_deadline_rejects_before_upstream_and_records_it(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

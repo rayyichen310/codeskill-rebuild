@@ -18,3 +18,15 @@ __pycache__/
 *.egg-info/
 /build/
 /dist/
+
+# Generated R015 packaging and run evidence; source versions use Git commits.
+/archive-stage-*/
+/archive-members-*
+/r015-luna-*.tar.gz
+/notes/checkpoint.md
+/configs/r015-c-only-coding-final*.json
+/docs/evidence/r015-c-only-*
+!/docs/evidence/r015-c-only-runtime-parity-20260913-03.json
+!/docs/evidence/r015-c-only-public-task-audit-20260913-24.json
+!/docs/evidence/r015-c-only-runtime-estimate-20260913-final.json
+!/docs/evidence/r015-c-only-<MODEL_SERVICE_HOST>-job-501-20260914-current-readonly.json

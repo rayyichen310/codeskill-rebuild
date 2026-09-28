@@ -5,17 +5,52 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
+from .code_examples import validate_materialized_code_examples
+
+
+def _render_code_examples(skill: dict[str, Any]) -> list[str]:
+    examples = validate_materialized_code_examples(skill.get("code_examples"))
+    if not examples:
+        return []
+    rendered = ["Optional code examples (adapt values to the current task and keep its stated requirements):"]
+    for ordinal, example in enumerate(examples, start=1):
+        generated = example["generated_example"]
+        rendered.extend(
+            [
+                f"#### Example {ordinal}: {example['purpose']}",
+                f"Language: {example['language']}",
+            ]
+        )
+        prerequisites = generated["prerequisites"]
+        applicability = list(
+            dict.fromkeys(
+                adaptation["applicability"]
+                for adaptation in generated["adaptations"]
+                if adaptation.get("applicability")
+            )
+        )
+        if applicability:
+            rendered.append("When to use: " + "; ".join(applicability))
+        if prerequisites:
+            rendered.append("Prerequisites: " + "; ".join(prerequisites))
+        rendered.extend([f"```{example['language']}", generated["code"], "```"])
+        if generated["known_limitations"]:
+            rendered.append("Known limitations: " + "; ".join(generated["known_limitations"]))
+        if generated["unknowns"]:
+            rendered.append("Unknowns: " + "; ".join(generated["unknowns"]))
+    return rendered
+
 
 def render_skill(skill: dict[str, Any]) -> str:
     rules = "\n".join(f"- {rule}" for rule in skill["rules"])
-    return "\n".join(
-        [
-            f"### {skill['title']} ({skill['skill_id']} v{skill['version']})",
-            f"When to apply: {skill['when_to_apply']}",
-            "Rules:",
-            rules,
-        ]
-    )
+    sections = [
+        f"### {skill['title']} ({skill['skill_id']} v{skill['version']})",
+        f"When to apply: {skill['when_to_apply']}",
+        "Rules:",
+        rules,
+    ]
+    sections.extend(_render_code_examples(skill))
+    return "\n".join(sections)
 
 
 def build_initial_messages(initial_user_prompt: str, task_skills: list[dict[str, Any]]) -> tuple[list[dict[str, str]], dict[str, Any]]:

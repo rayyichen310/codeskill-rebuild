@@ -1,0 +1,332 @@
+{
+  "schema_version": 1,
+  "kind": "r015_environment_alignment_acceptance",
+  "created_at_utc": "2026-09-16T02:41:57.997722Z",
+  "scope": "Deterministic environment alignment only; no solver task attempt, manager call, skill injection, or formal campaign trial.",
+  "change": {
+    "previous_adapter": {
+      "execution_user": 1000,
+      "home": "/home/codeskill",
+      "nvm_dir": "/home/codeskill/.nvm",
+      "workspace_mutation": "recursive chown of /home/codeskill and /app to 1000:1000",
+      "git_safe_directory_override": false
+    },
+    "corrected_adapter": {
+      "execution_user": null,
+      "execution_user_meaning": "Harbor uses the task image's default user",
+      "home": "/root",
+      "nvm_dir": "/root/.nvm",
+      "workspace_mutation": "none",
+      "git_safe_directory_override": false,
+      "source": {
+        "path": "src/codeskill_rebuild/harbor_openclaw_adapter.py",
+        "sha256": "10eb11259011cce81bef3ace1e1232a65fdccb9d1cb3b828cc4302b5612863f1"
+      }
+    }
+  },
+  "comparison": [
+    {
+      "dimension": "execution_uid_gid",
+      "historical_baseline": "Container default user; baseline adapter contains no user override. The audited task image Config.User is absent, so root is an evidence-backed inference rather than a saved baseline id output.",
+      "previous_c_only": "Forced 1000:1000",
+      "corrected": "Container default; live probes observed 0:0 in all three images"
+    },
+    {
+      "dimension": "workspace_ownership",
+      "historical_baseline": "No recursive /app ownership rewrite in the historical adapter",
+      "previous_c_only": "Recursive chown /app to 1000:1000",
+      "corrected": "No adapter ownership rewrite; live probes observed /app as 0:0 mode 755"
+    },
+    {
+      "dimension": "home",
+      "historical_baseline": "Not explicitly saved; follows the container default user",
+      "previous_c_only": "/home/codeskill",
+      "corrected": "/root"
+    },
+    {
+      "dimension": "path",
+      "historical_baseline": "Not saved as a complete value",
+      "previous_c_only": "Task-image PATH under UID 1000 plus /home/codeskill-managed tools",
+      "corrected": "Task-image root PATH; live values retained per probe and include /usr/local/bin"
+    },
+    {
+      "dimension": "python_and_packages",
+      "historical_baseline": "Exact interpreter and site-package path not saved",
+      "previous_c_only": "pip user installs resolved under /home/codeskill/.local while verifier ran with /root",
+      "corrected": "When Python exists, agent and verifier both resolve /root/.local/lib/python3.13/site-packages"
+    },
+    {
+      "dimension": "toolset",
+      "historical_baseline": "Task-image-specific tools plus historical local OpenClaw adapter",
+      "previous_c_only": "Same public task images, but UID 1000 changed tool usability and install destinations",
+      "corrected": "Task-image-specific tools preserved; missing Python in git-leak-recovery is retained as not applicable rather than synthesized"
+    },
+    {
+      "dimension": "harbor_openclaw_runtime",
+      "historical_baseline": "Historical local OpenClaw source release 2026.7.2; Harbor version not present in the saved trial config",
+      "previous_c_only": "Harbor 0.17.1 and public OpenClaw 2026.9.3",
+      "corrected": "Harbor 0.17.1 and public OpenClaw 2026.9.3; this remains a disclosed runtime difference, not an equivalence claim"
+    }
+  ],
+  "historical_sources": {
+    "baseline_adapter": {
+      "path": "<OPENCLAW_ROOT>/workspace/terminal-bench2/openclaw_local_adapter.py",
+      "sha256": "b01da1c56db34d8323e1bda027f9077cbc835b1108620dcd6fbea9ec5473d837"
+    },
+    "baseline_build_pmars_config": {
+      "path": "<OPENCLAW_ROOT>/docs/plan/summary-spine/terminal-bench-results/raw/dsv4-v1d-core12-paired-r1-20260904-baseline/2026-09-04__15-38-16/build-pmars__pMuKTqk/config.json",
+      "sha256": "8d1c3de2621c74cca5e9b8266e92ecce0247a8cd79919e7e0ef9ce0d68abcdd4"
+    },
+    "baseline_build_pmars_run_env": {
+      "path": "<OPENCLAW_ROOT>/docs/plan/summary-spine/terminal-bench-results/raw/dsv4-v1d-core12-paired-r1-20260904-baseline/2026-09-04__15-38-16/build-pmars__pMuKTqk/agent/run.env",
+      "sha256": "650026e29d745dadad01b8230cbef9a1abbbe520822e31d22c94b0d46600cd35"
+    },
+    "public_task_audit": {
+      "path": "docs/evidence/r015-c-only-public-task-audit-20260913-24.json",
+      "sha256": "d006249a7681273875d44633b21c9505ec59511e623d50246ed50b93b3b860c9"
+    }
+  },
+  "observed_failure_chain": {
+    "installation_permission": {
+      "task": "build-pmars",
+      "observation": "The UID-1000 solver could not install the required binary at /usr/local/bin/pmars; the verifier then found the required path absent.",
+      "trial_log": {
+        "path": "/home/<T2_HOST>/ray/tmp/r015-c-only-formal-20260914-01/attempts/attempt-003/round-2/build-pmars/official-harbor/harbor/jobs/r015-c-only-r2-build-pmars-a76c9d90945a/build-pmars__He9mPiA/trial.log",
+        "sha256": "d2d0fa7a3f8892b25a29cd3f3859b5d5afd1b3394974672ccc1efd2071d0ff1a"
+      },
+      "verifier": {
+        "path": "/home/<T2_HOST>/ray/tmp/r015-c-only-formal-20260914-01/attempts/attempt-003/round-2/build-pmars/official-harbor/harbor/jobs/r015-c-only-r2-build-pmars-a76c9d90945a/build-pmars__He9mPiA/verifier/ctrf.json",
+        "sha256": "7850ab59b13e1aecf3b7e1435674398f811527bbd1f03bbc7fc1538f9e8931df"
+      }
+    },
+    "git_ownership": {
+      "task": "git-leak-recovery",
+      "observation": "The adapter changed /app ownership to UID 1000; the root verifier rejected /app/repo as dubious ownership.",
+      "verifier": {
+        "path": "/home/<T2_HOST>/ray/tmp/r015-c-only-formal-20260914-01/attempts/attempt-003/round-1/git-leak-recovery/official-harbor/harbor/jobs/r015-c-only-r1-git-leak-recovery-aefeabd38ea1/git-leak-recovery__5xZhsse/verifier/ctrf.json",
+        "sha256": "7a78f154d75c4fb59f9a69796a0e16a0578c5c55a49b04bcae50000d8791ded8"
+      }
+    },
+    "python_package_visibility": {
+      "task": "pypi-server",
+      "observation": "The UID-1000 solver installed a user package below /home/codeskill/.local, while the root verifier used /root and could not rely on that user site.",
+      "session": {
+        "path": "/home/<T2_HOST>/ray/tmp/r015-c-only-formal-20260914-01/attempts/attempt-003/round-1/pypi-server/official-harbor/harbor/jobs/r015-c-only-r1-pypi-server-fccab6827294/pypi-server__hRv2qzw/agent/openclaw.session.jsonl",
+        "sha256": "a0425ad12968197d0ab46c042c2fc9dfbd558c91f08060279c633d53dc0b426d"
+      },
+      "verifier": {
+        "path": "/home/<T2_HOST>/ray/tmp/r015-c-only-formal-20260914-01/attempts/attempt-003/round-1/pypi-server/official-harbor/harbor/jobs/r015-c-only-r1-pypi-server-fccab6827294/pypi-server__hRv2qzw/verifier/ctrf.json",
+        "sha256": "9442a3bf5e3b1da85fded51b6243a997d3b14e4bd93306acbc86ebac0af5d3a4"
+      }
+    }
+  },
+  "initial_live_production_install_probe": {
+    "review_status": "invalidated_by_cross_uid_permission_gap_and_false_positive_git_guard",
+    "invalidated_commit": "6a1b7fb360d4756577ea398e11691c7cd671ff69",
+    "limitations_discovered_after_commit": [
+      "The root plugin wrote mode-0600 lifecycle records that the host UID-1000 sidecar could not read.",
+      "The Git shell probe printed git_status=readable after git status failed because the command did not branch on its return code."
+    ],
+    "host": "t2-codex",
+    "harbor_version": "0.17.1",
+    "openclaw_version": "2026.9.3",
+    "production_install_path": true,
+    "formal_solver_started": false,
+    "model_calls": 0,
+    "trials": 3,
+    "exceptions": 0,
+    "probe_source": {
+      "path": "src/codeskill_rebuild/harbor_environment_probe.py",
+      "live_run_sha256": "49d7527918eeb7b45e459be703ca680a45c9bdf08a546f5ac067597a73d360d4",
+      "repository_sha256": "e7fdba7790b97b32cd7a39f28841803a164646064dd6c80aa2d3498b4cbd09fa",
+      "difference_from_repository_source": "The repository copy only removes one trailing space; executable source text and behavior are unchanged."
+    },
+    "job_config": {
+      "path": "/home/<T2_HOST>/ray/tmp/codeskill-env-part-a-wNOoIm/job-v3.json",
+      "sha256": "9336fd1e3e247728cbf1f441a381c48c5f46a6a911e92394b27e9e7f73cb255e"
+    },
+    "job_result": {
+      "path": "/home/<T2_HOST>/ray/tmp/codeskill-env-part-a-wNOoIm/jobs-v3/codeskill-env-part-a-production-install-probe/result.json",
+      "sha256": "2a6a5711ce6a179d2d14f5d698a513fd0302f5d91b80fc938693cb8599b0750f"
+    },
+    "task_results": [
+      {
+        "task": "build-pmars",
+        "image_id": "sha256:57a82706f7491e0b2d1ff7e927e97ae5339892dd09c47ac43290b4ba1f5abc6f",
+        "evidence": {
+          "path": "/home/<T2_HOST>/ray/tmp/codeskill-env-part-a-wNOoIm/jobs-v3/codeskill-env-part-a-production-install-probe/build-pmars__DgkVQbL/agent/environment-contract.json",
+          "sha256": "acabdb85fbf7e68356d216c3d051327ce3f7d57152c1dbc7ee944c125c915379"
+        },
+        "observed": {
+          "agent_identity": "0:0",
+          "verifier_identity": "0:0",
+          "workspace_owner": "0:0",
+          "system_install_visible_to_verifier": true,
+          "python_user_site_visible_to_verifier": true,
+          "git_check": "not_applicable"
+        }
+      },
+      {
+        "task": "git-leak-recovery",
+        "image_id": "sha256:62160e522a4238b8bcd522411ea97b5b200f811e5899d34947e66809bef7e586",
+        "evidence": {
+          "path": "/home/<T2_HOST>/ray/tmp/codeskill-env-part-a-wNOoIm/jobs-v3/codeskill-env-part-a-production-install-probe/git-leak-recovery__TEyZCJS/agent/environment-contract.json",
+          "sha256": "1929ec90f62760320efad16b996cf9c22682476bb65079d75c2206fb960f5610"
+        },
+        "observed": {
+          "agent_identity": "0:0",
+          "verifier_identity": "0:0",
+          "workspace_owner": "0:0",
+          "repository_owner": "0:0",
+          "system_install_visible_to_verifier": true,
+          "git_status_visible_to_agent_and_verifier": true,
+          "git_safe_directory_override": false,
+          "python_check": "not_applicable_python3_absent_in_image"
+        }
+      },
+      {
+        "task": "pypi-server",
+        "image_id": "sha256:d18bb30f47c7dcaa3acdbc31ac7413c98eadca2ea16540bbd380f2f063b95276",
+        "evidence": {
+          "path": "/home/<T2_HOST>/ray/tmp/codeskill-env-part-a-wNOoIm/jobs-v3/codeskill-env-part-a-production-install-probe/pypi-server__se83Tx8/agent/environment-contract.json",
+          "sha256": "3c339eedb02394ebc4b5c8063715c53b866d166b3bd9f290469db3f5953f4d4e"
+        },
+        "observed": {
+          "agent_identity": "0:0",
+          "verifier_identity": "0:0",
+          "workspace_owner": "0:0",
+          "system_install_visible_to_verifier": true,
+          "python_user_site": "/root/.local/lib/python3.13/site-packages",
+          "python_user_site_visible_to_verifier": true,
+          "git_check": "not_applicable"
+        }
+      }
+    ]
+  },
+  "corrected_live_validation": {
+    "host": "t2-codex",
+    "harbor_version": "0.17.1",
+    "openclaw_version": "2026.9.3",
+    "formal_solver_started": false,
+    "model_calls": 0,
+    "source_hashes": {
+      "environment_probe_sha256": "55b0622f3168c73da5239b1eeeebbc9a2d7a2b8e9b652846df952f7682bbf1dd",
+      "lifecycle_record_sha256": "b7415db064c786883c38524966ca363a586cffabd4191a694057ce39cfc0027a",
+      "plugin_index_live_sha256": "0c3e81f8590369e4afe6b9e5a34f3d2b4b10fbc114f10500f38ae6d8d545bb7f",
+      "plugin_index_repository_sha256": "bfc6aeca624dbf6f02ae0a9cc501965f50b53c9e453bcf0c968ef6869f9c6338",
+      "plugin_index_difference": "Line-ending normalization only; lifecycle-record.js, which implements the tested cross-UID write, is byte-identical to the live source.",
+      "harbor_driver_sha256": "f9921a5a9f0532a5eed0a9b74e93c149c04417bc1edf088f0cbbe536236b79ff"
+    },
+    "cross_uid_lifecycle_record": {
+      "status": "passed",
+      "description": "The production adapter installed the public plugin in a root task container. Its production lifecycle writer created a root-owned boundary while the real host NativeSummaryPermitGate ran as UID/GID 1000 and consumed that boundary without PermissionError.",
+      "observed": {
+        "permit_directory_owner": "1000:1000",
+        "permit_directory_mode": "2770",
+        "record_owner": "0:1000",
+        "record_mode": "0640",
+        "sidecar_identity": "1000:1000",
+        "record_consumed": true
+      },
+      "job_config": {
+        "path": "/home/<T2_HOST>/ray/tmp/codeskill-env-part-a-fix-NQ5pLR/job-permission-fix.json",
+        "sha256": "2374a641723ec653489b3ddc053492e91c6bad8c0131ec84afc7336e3f4605fb"
+      },
+      "job_result": {
+        "path": "/home/<T2_HOST>/ray/tmp/codeskill-env-part-a-fix-NQ5pLR/jobs-permission-v2/codeskill-env-part-a-permission-fix-v2/result.json",
+        "sha256": "17ee171035e4c9c7c90622f9d29042ce67f297efe9573af0bd596010fc076f73"
+      },
+      "environment_contract": {
+        "path": "/home/<T2_HOST>/ray/tmp/codeskill-env-part-a-fix-NQ5pLR/jobs-permission-v2/codeskill-env-part-a-permission-fix-v2/git-leak-recovery__pdosRNe/agent/environment-contract.json",
+        "sha256": "c34666cf5519e548a63f3fce13f869467fb9ffe5c326a49cf2948dd679fc35d8"
+      },
+      "sidecar_observation": {
+        "path": "/home/<T2_HOST>/ray/tmp/codeskill-env-part-a-fix-NQ5pLR/permission-watcher-result-v2.json",
+        "sha256": "98339e9ca8b8d6c69dbd4d896f80abc4c04eeda0fb388d5f7db3d81f6046b14e"
+      },
+      "sidecar_state": {
+        "path": "/home/<T2_HOST>/ray/tmp/codeskill-env-part-a-fix-NQ5pLR/harbor-permits/sidecar-permit-state.json",
+        "sha256": "e89e83f7c019c418bac141684dddaed6f678a6a6fe949c03752e63e001c0fe57"
+      }
+    },
+    "git_negative_control": {
+      "status": "passed",
+      "description": "The corrected production probe command ran as root against a UID/GID-1000 repository. Git emitted dubious ownership, the guard returned 128, emitted git_status=unreadable, and did not emit git_status=readable.",
+      "repository_owner": "1000:1000",
+      "guarded_return_code": 128,
+      "false_readable_marker_present": false,
+      "global_safe_directory_added": false,
+      "probe_script": {
+        "path": "/home/<T2_HOST>/ray/tmp/codeskill-env-part-a-fix-NQ5pLR/permission-probe.sh",
+        "sha256": "d3cc4f7b6954b84b3d382b677281dd1600cc46e6fe108407d27df005e6896aef"
+      }
+    },
+    "three_image_production_install_probe": {
+      "status": "passed",
+      "trials": 3,
+      "exceptions": 0,
+      "job_config": {
+        "path": "/home/<T2_HOST>/ray/tmp/codeskill-env-part-a-fix-NQ5pLR/job-environment-fix.json",
+        "sha256": "1974c07bb492858704fb04e8cd85305c2fa7b51d29af891f57fda6c7dfaeda0c"
+      },
+      "job_result": {
+        "path": "/home/<T2_HOST>/ray/tmp/codeskill-env-part-a-fix-NQ5pLR/jobs-corrected/codeskill-env-part-a-corrected-probe/result.json",
+        "sha256": "670a3437c3347c31283843261f0d33332bb27bf78bb0ccd5ed66322278d67019"
+      },
+      "task_results": [
+        {
+          "task": "build-pmars",
+          "acceptance": "passed",
+          "sha256": "adc904c3ab8a83601cc595a6639115b4cf3a5a9c24b6096c18ec7746ab1116ea"
+        },
+        {
+          "task": "git-leak-recovery",
+          "acceptance": "passed",
+          "sha256": "1b0c7aca0081b648134b537b36745befacbe1b59853da484de37226d5b2d09eb"
+        },
+        {
+          "task": "pypi-server",
+          "acceptance": "passed",
+          "sha256": "9a5077975c66e4f9c8afd32043152bd0a12e6235b2bcc394e4591098139f43ca"
+        }
+      ]
+    }
+  },
+  "acceptance": {
+    "installation_permission": "passed",
+    "solver_artifact_visible_to_verifier": "passed",
+    "git_ownership": "passed",
+    "git_negative_control": "passed",
+    "python_package_visibility": "passed",
+    "cross_uid_plugin_sidecar_boundary": "passed",
+    "no_task_specific_production_branch": true,
+    "no_global_git_trust": true,
+    "verifier_unchanged": true
+  },
+  "proposed_no_skill_solver_calibration": {
+    "status": "not_started_requires_separate_review",
+    "command": "harbor job start --config <reviewed-no-skill-calibration-job.json> --yes",
+    "tasks": [
+      "build-pmars",
+      "git-leak-recovery",
+      "pypi-server"
+    ],
+    "trials": 3,
+    "concurrency": 1,
+    "skills": "empty frozen bank; no injected task or event skill",
+    "estimated_model_calls": {
+      "basis": "previous C-only observed request counts for the same tasks; estimate only, not a cap",
+      "build-pmars": 139,
+      "git-leak-recovery": 8,
+      "pypi-server": 21,
+      "total": 168
+    },
+    "start_gate": "Do not run until the exact job JSON and this estimate are reviewed; it is not part of the deterministic environment acceptance."
+  },
+  "limitations": [
+    "The probe validates environment behavior and production adapter installation, not task-solving success or historical reward recovery.",
+    "The historical baseline did not save a direct id/HOME/PATH/Python inventory, so unknown fields remain explicit instead of reconstructed as observations.",
+    "OpenClaw 2026.9.3 is not claimed equivalent to the historical 2026.7.2 source release.",
+    "The git-leak-recovery image has no python3, so Python visibility is established in the build-pmars and pypi-server images instead."
+  ]
+}

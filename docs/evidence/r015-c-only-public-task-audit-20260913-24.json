@@ -1,0 +1,698 @@
+{
+  "schema_version": 1,
+  "kind": "r015_public_tb21_task_artifact_audit",
+  "created_at_utc": "2026-09-13T13:13:37.797984Z",
+  "task_root": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks",
+  "historical_task_root": "<PROJECT_ROOT>/cache/parent-official-tb21-metadata/tasks",
+  "tasks": [
+    {
+      "order": 1,
+      "task_id": "build-pmars",
+      "task_name": "terminal-bench/build-pmars",
+      "task_path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/build-pmars",
+      "task_toml": {
+        "path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/build-pmars/task.toml",
+        "sha256": "7ee2eac27b99fd462e0760552a430454db693f86608af5bb570b020270e4c9cd",
+        "size_bytes": 1012
+      },
+      "public_task": {
+        "description": "Evaluates the ability to build pMARS from Debian source packages with X11 support disabled, requiring Makefile modification and headless compilation.",
+        "difficulty": "medium",
+        "category": "software-engineering"
+      },
+      "environment": {
+        "docker_image": "alexgshaw/build-pmars:20251031",
+        "build_timeout_sec": 600.0,
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true
+      },
+      "agent_timeout_sec": 900.0,
+      "verifier_timeout_sec": 900.0,
+      "hidden_material_read": false,
+      "historical_public_task_toml": {
+        "path": "<PROJECT_ROOT>/cache/parent-official-tb21-metadata/tasks/build-pmars/task.toml",
+        "sha256": "7ee2eac27b99fd462e0760552a430454db693f86608af5bb570b020270e4c9cd",
+        "size_bytes": 1012,
+        "matches_prepared_public_toml": true,
+        "comparison_scope": "task.toml bytes only; no solution or verifier source read"
+      },
+      "docker_image": {
+        "status": "observed",
+        "image_id": "sha256:57a82706f7491e0b2d1ff7e927e97ae5339892dd09c47ac43290b4ba1f5abc6f",
+        "repo_digests": [
+          "alexgshaw/build-pmars@sha256:57a82706f7491e0b2d1ff7e927e97ae5339892dd09c47ac43290b4ba1f5abc6f"
+        ],
+        "created": "2025-09-14T00:04:05.665718734Z",
+        "architecture": "amd64",
+        "os": "linux",
+        "config_user": null,
+        "config_working_dir": "/app",
+        "rootfs_layers": [
+          "sha256:e6a3842ebc7f5e41d8a38f19a0aa5ea56c255475695ac6682882420800cf5465",
+          "sha256:a2ece2ea1d2fa786b1a4af785edafac52fed80c56396bd51195124080fbd6a29",
+          "sha256:5d2cb669a97872eedc9197d2df1a18481e5794309eb3a30297e0fd8efa72867a",
+          "sha256:634497d0b62c8f3a9bf01b3d90e751902cf49b2bdda3ccd6b79d049d7a1f2073"
+        ],
+        "stdout_sha256": "149e8de380d155c240fa5bf0bc42337e1e883f28e581d9b96f575e8da841f68d",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "order": 2,
+      "task_id": "cancel-async-tasks",
+      "task_name": "terminal-bench/cancel-async-tasks",
+      "task_path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/cancel-async-tasks",
+      "task_toml": {
+        "path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/cancel-async-tasks/task.toml",
+        "sha256": "14db0675e04408f2133b0067e8dbddf66a1d6e7baf6b8d38bef8ecccfc4e58a8",
+        "size_bytes": 927
+      },
+      "public_task": {
+        "description": "Evaluates the ability to implement async task concurrency control with proper cleanup on cancellation, including the edge case of queued tasks.",
+        "difficulty": "hard",
+        "category": "software-engineering"
+      },
+      "environment": {
+        "docker_image": "alexgshaw/cancel-async-tasks:20251031",
+        "build_timeout_sec": 600.0,
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true
+      },
+      "agent_timeout_sec": 900.0,
+      "verifier_timeout_sec": 900.0,
+      "hidden_material_read": false,
+      "historical_public_task_toml": {
+        "path": "<PROJECT_ROOT>/cache/parent-official-tb21-metadata/tasks/cancel-async-tasks/task.toml",
+        "sha256": "14db0675e04408f2133b0067e8dbddf66a1d6e7baf6b8d38bef8ecccfc4e58a8",
+        "size_bytes": 927,
+        "matches_prepared_public_toml": true,
+        "comparison_scope": "task.toml bytes only; no solution or verifier source read"
+      },
+      "docker_image": {
+        "status": "observed",
+        "image_id": "sha256:84c7fae6b256dcc56a350790e2a9715eefc7dad662a9d8e8a472363aa71ef18d",
+        "repo_digests": [
+          "alexgshaw/cancel-async-tasks@sha256:84c7fae6b256dcc56a350790e2a9715eefc7dad662a9d8e8a472363aa71ef18d"
+        ],
+        "created": "2025-08-22T02:01:01.875738378Z",
+        "architecture": "amd64",
+        "os": "linux",
+        "config_user": null,
+        "config_working_dir": "/app",
+        "rootfs_layers": [
+          "sha256:eb5f13bce9936c760b9fa73aeb1b608787daa36106cc888104132e353ed37252",
+          "sha256:2a9c7b727490d026db269bdf2bf74ce80e17abe26fc4dd99bd53b3d1686e58dc",
+          "sha256:1ce62254e2a41ba52d6f4edab1c02c6733a219d0b27ff7b0d495f2987fc165ad",
+          "sha256:56ffb1fa8b190de199776ee5e02b4c9d482f5300e4aaa162e66fe09778c1a243",
+          "sha256:bb90eb063b6e7bec0bb1f27ff7d6d84dbd5f9c1c3932cbec014527582d94733c"
+        ],
+        "stdout_sha256": "2020d252111034dc40828ac79f3874f58715295354922cd3859059ca1553e855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "order": 3,
+      "task_id": "cobol-modernization",
+      "task_name": "terminal-bench/cobol-modernization",
+      "task_path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/cobol-modernization",
+      "task_toml": {
+        "path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/cobol-modernization/task.toml",
+        "sha256": "4b620211dc3d6b1b989f0210c5ecd2f606974581c8bce27bd78659d48cf0cfbd",
+        "size_bytes": 882
+      },
+      "public_task": {
+        "description": "Evaluates the ability to reverse-engineer and reimplement a COBOL program's business logic in Python with exact output reproduction.",
+        "difficulty": "easy",
+        "category": "software-engineering"
+      },
+      "environment": {
+        "docker_image": "alexgshaw/cobol-modernization:20251031",
+        "build_timeout_sec": 600.0,
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true
+      },
+      "agent_timeout_sec": 900.0,
+      "verifier_timeout_sec": 900.0,
+      "hidden_material_read": false,
+      "historical_public_task_toml": {
+        "path": "<PROJECT_ROOT>/cache/parent-official-tb21-metadata/tasks/cobol-modernization/task.toml",
+        "sha256": "4b620211dc3d6b1b989f0210c5ecd2f606974581c8bce27bd78659d48cf0cfbd",
+        "size_bytes": 882,
+        "matches_prepared_public_toml": true,
+        "comparison_scope": "task.toml bytes only; no solution or verifier source read"
+      },
+      "docker_image": {
+        "status": "observed",
+        "image_id": "sha256:593ab9df3d83f771e927888b2d9436b380cdf7ec4d0af2a9f0802d541edebba0",
+        "repo_digests": [
+          "alexgshaw/cobol-modernization@sha256:593ab9df3d83f771e927888b2d9436b380cdf7ec4d0af2a9f0802d541edebba0"
+        ],
+        "created": "2025-08-22T18:37:38.976610915Z",
+        "architecture": "amd64",
+        "os": "linux",
+        "config_user": null,
+        "config_working_dir": "/app",
+        "rootfs_layers": [
+          "sha256:eb5f13bce9936c760b9fa73aeb1b608787daa36106cc888104132e353ed37252",
+          "sha256:2a9c7b727490d026db269bdf2bf74ce80e17abe26fc4dd99bd53b3d1686e58dc",
+          "sha256:1ce62254e2a41ba52d6f4edab1c02c6733a219d0b27ff7b0d495f2987fc165ad",
+          "sha256:56ffb1fa8b190de199776ee5e02b4c9d482f5300e4aaa162e66fe09778c1a243",
+          "sha256:bb90eb063b6e7bec0bb1f27ff7d6d84dbd5f9c1c3932cbec014527582d94733c",
+          "sha256:f9d2e52946157a212e916f3d00778cc9022e267f21676a67c012ef3f582c3711",
+          "sha256:c2a759f50e78a9434dad55c6a7fa5cb982a86a2ae053c3c513abb7193b4fba6b",
+          "sha256:e80e2765b30c1219f48646cfccf4c83e1ae370e11b7d130f5ef16203d531d5d3",
+          "sha256:0d9768398797bf015ce33873198533ad060526e90bcad2ffdbc7c9a68f0eea28"
+        ],
+        "stdout_sha256": "89a244f3c787d8fa1f051c2bcd64877aa34fb85e252244593accd2b7d6824035",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "order": 4,
+      "task_id": "code-from-image",
+      "task_name": "terminal-bench/code-from-image",
+      "task_path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/code-from-image",
+      "task_toml": {
+        "path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/code-from-image/task.toml",
+        "sha256": "3a13c1e252bb8759f51215be0b2b2cb1b4c697f0dd570f2d7702cc28b28f08de",
+        "size_bytes": 890
+      },
+      "public_task": {
+        "description": "Evaluates an agent's ability to extract code from an image using OCR or vision models, implement the pseudocode logic with cryptographic hashing, and produce the correct output.",
+        "difficulty": "medium",
+        "category": "software-engineering"
+      },
+      "environment": {
+        "docker_image": "alexgshaw/code-from-image:20251031",
+        "build_timeout_sec": 600.0,
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true
+      },
+      "agent_timeout_sec": 1200.0,
+      "verifier_timeout_sec": 1200.0,
+      "hidden_material_read": false,
+      "historical_public_task_toml": {
+        "path": "<PROJECT_ROOT>/cache/parent-official-tb21-metadata/tasks/code-from-image/task.toml",
+        "sha256": "3a13c1e252bb8759f51215be0b2b2cb1b4c697f0dd570f2d7702cc28b28f08de",
+        "size_bytes": 890,
+        "matches_prepared_public_toml": true,
+        "comparison_scope": "task.toml bytes only; no solution or verifier source read"
+      },
+      "docker_image": {
+        "status": "observed",
+        "image_id": "sha256:2be9cdb746ed18c1b2b1404032efae0b2235a1b8fc479ef17730c95409d89f76",
+        "repo_digests": [
+          "alexgshaw/code-from-image@sha256:2be9cdb746ed18c1b2b1404032efae0b2235a1b8fc479ef17730c95409d89f76"
+        ],
+        "created": "2025-09-13T19:43:18.080174371Z",
+        "architecture": "amd64",
+        "os": "linux",
+        "config_user": null,
+        "config_working_dir": "/app",
+        "rootfs_layers": [
+          "sha256:eb5f13bce9936c760b9fa73aeb1b608787daa36106cc888104132e353ed37252",
+          "sha256:2a9c7b727490d026db269bdf2bf74ce80e17abe26fc4dd99bd53b3d1686e58dc",
+          "sha256:1ce62254e2a41ba52d6f4edab1c02c6733a219d0b27ff7b0d495f2987fc165ad",
+          "sha256:56ffb1fa8b190de199776ee5e02b4c9d482f5300e4aaa162e66fe09778c1a243",
+          "sha256:bb90eb063b6e7bec0bb1f27ff7d6d84dbd5f9c1c3932cbec014527582d94733c",
+          "sha256:4c61724cb807fc775c791981fddb3e1a3154640416bfada981fe01d79f76a8f8"
+        ],
+        "stdout_sha256": "536a0e8e6c35d2d743596737afca293843620cb81c09543f26b798f7e052b1b3",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "order": 5,
+      "task_id": "fix-git",
+      "task_name": "terminal-bench/fix-git",
+      "task_path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/fix-git",
+      "task_toml": {
+        "path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/fix-git/task.toml",
+        "sha256": "f59d711003b974e4ef8ed63556614e2ea9ea7d0e394af13b2071225e3fda7805",
+        "size_bytes": 879
+      },
+      "public_task": {
+        "description": "Evaluates the ability to recover lost Git commits from a detached HEAD state and merge them back into the master branch.",
+        "difficulty": "easy",
+        "category": "software-engineering"
+      },
+      "environment": {
+        "docker_image": "alexgshaw/fix-git:20260403",
+        "build_timeout_sec": 600.0,
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true
+      },
+      "agent_timeout_sec": 900.0,
+      "verifier_timeout_sec": 900.0,
+      "hidden_material_read": false,
+      "historical_public_task_toml": {
+        "path": "<PROJECT_ROOT>/cache/parent-official-tb21-metadata/tasks/fix-git/task.toml",
+        "sha256": "f59d711003b974e4ef8ed63556614e2ea9ea7d0e394af13b2071225e3fda7805",
+        "size_bytes": 879,
+        "matches_prepared_public_toml": true,
+        "comparison_scope": "task.toml bytes only; no solution or verifier source read"
+      },
+      "docker_image": {
+        "status": "observed",
+        "image_id": "sha256:389b9c8247610c2c5be080b1ac00429007c2c69bf57f7f26c79f0f75ba2d5c74",
+        "repo_digests": [
+          "alexgshaw/fix-git@sha256:389b9c8247610c2c5be080b1ac00429007c2c69bf57f7f26c79f0f75ba2d5c74"
+        ],
+        "created": "2026-04-03T07:47:18.477782712Z",
+        "architecture": "amd64",
+        "os": "linux",
+        "config_user": null,
+        "config_working_dir": "/app/personal-site",
+        "rootfs_layers": [
+          "sha256:6143ee9e3de07e6ca35edaf392cf93dea566a5bcd0d3696607ae6c324193d099",
+          "sha256:707f05f9c84b69f54cf66e9ea2fc9a4e703fe023e727f517e590e97907bf36a8",
+          "sha256:017c8400b647e014fa8f6e90501a0741f5b8a3e9b4f268868e8cc7941f59a8ec",
+          "sha256:7ee20433ac93391e8d93cf192a4b5552f84308a7c4ca4b53dcf8a79ba9aa3738",
+          "sha256:097b2e6d819c7a4f9d0d9db00e9a3c289dcd59b7aca88cb4a12970a5976dcf55",
+          "sha256:eeb8e6c4af8367aed4d26d25c7cef0fb7ecbfbfe2939615ac97456de3a2844f2",
+          "sha256:0dfd26039588c82c6e7cbb9281e1d1ef6743bdd1c427e625d77398b83279864c",
+          "sha256:829b939b5da1140c300244b3389c0c981697ec594647f93bda877a56d86beef0",
+          "sha256:c6b8502cc365245437e683ddf04d45fbbd3efe0192f86acb02a9372dea13e4ef",
+          "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+        ],
+        "stdout_sha256": "ad3df98c156791f671325a9941bfb2d27d6e558849366461ec77f96892d31252",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "order": 6,
+      "task_id": "fix-ocaml-gc",
+      "task_name": "terminal-bench/fix-ocaml-gc",
+      "task_path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/fix-ocaml-gc",
+      "task_toml": {
+        "path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/fix-ocaml-gc/task.toml",
+        "sha256": "423aab8ce6f44ce9349dcde647ca3cbd09afd5ac023910c25699ed687a3c71b2",
+        "size_bytes": 920
+      },
+      "public_task": {
+        "description": "Evaluates ability to debug and fix a runtime crash in the OCaml garbage collector's C implementation, requiring low-level debugging skills and understanding of compiler internals.",
+        "difficulty": "hard",
+        "category": "software-engineering"
+      },
+      "environment": {
+        "docker_image": "alexgshaw/fix-ocaml-gc:20251031",
+        "build_timeout_sec": 600.0,
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true
+      },
+      "agent_timeout_sec": 3600.0,
+      "verifier_timeout_sec": 3600.0,
+      "hidden_material_read": false,
+      "historical_public_task_toml": {
+        "path": "<PROJECT_ROOT>/cache/parent-official-tb21-metadata/tasks/fix-ocaml-gc/task.toml",
+        "sha256": "423aab8ce6f44ce9349dcde647ca3cbd09afd5ac023910c25699ed687a3c71b2",
+        "size_bytes": 920,
+        "matches_prepared_public_toml": true,
+        "comparison_scope": "task.toml bytes only; no solution or verifier source read"
+      },
+      "docker_image": {
+        "status": "observed",
+        "image_id": "sha256:66a1e2293076c9ef27a118611b3089a6284fdf467fd4675592d0cce7d11e5b0b",
+        "repo_digests": [
+          "alexgshaw/fix-ocaml-gc@sha256:66a1e2293076c9ef27a118611b3089a6284fdf467fd4675592d0cce7d11e5b0b"
+        ],
+        "created": "2025-10-28T22:07:07.91453874Z",
+        "architecture": "amd64",
+        "os": "linux",
+        "config_user": null,
+        "config_working_dir": "/app",
+        "rootfs_layers": [
+          "sha256:073ec47a8c22dcaa4d6e5758799ccefe2f9bde943685830b1bf6fd2395f5eabc",
+          "sha256:e54d39dd357723fa47bd55e1fcadadd4e4882e84f0c323ad63413edd1a650020",
+          "sha256:4301ca2582783d1e24d10a36f7d8196f2be58370b25f12b94a099f3d19e3af84",
+          "sha256:ee239e6b556fc7f74a74a4b74137119b5812aac4caa267dc447ac5feafef107e",
+          "sha256:a774598c97ec78aa60b578e3f9f5e074c68a93c4d465117607a95e5bda435a0b"
+        ],
+        "stdout_sha256": "1e5eced8176a942ccf0dcd834489f4850bb8f98ad60e55a3068802b053a89b61",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "order": 7,
+      "task_id": "git-leak-recovery",
+      "task_name": "terminal-bench/git-leak-recovery",
+      "task_path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/git-leak-recovery",
+      "task_toml": {
+        "path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/git-leak-recovery/task.toml",
+        "sha256": "d7f23fda4a6ba3fff902d2a475db8ff74feb5d328980696a77068c02c57d3044",
+        "size_bytes": 937
+      },
+      "public_task": {
+        "description": "Evaluates the ability to recover secrets from unreachable git objects and completely remove them from repository history while preserving legitimate commits.",
+        "difficulty": "medium",
+        "category": "software-engineering"
+      },
+      "environment": {
+        "docker_image": "alexgshaw/git-leak-recovery:20251031",
+        "build_timeout_sec": 600.0,
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true
+      },
+      "agent_timeout_sec": 900.0,
+      "verifier_timeout_sec": 900.0,
+      "hidden_material_read": false,
+      "historical_public_task_toml": {
+        "path": "<PROJECT_ROOT>/cache/parent-official-tb21-metadata/tasks/git-leak-recovery/task.toml",
+        "sha256": "d7f23fda4a6ba3fff902d2a475db8ff74feb5d328980696a77068c02c57d3044",
+        "size_bytes": 937,
+        "matches_prepared_public_toml": true,
+        "comparison_scope": "task.toml bytes only; no solution or verifier source read"
+      },
+      "docker_image": {
+        "status": "observed",
+        "image_id": "sha256:62160e522a4238b8bcd522411ea97b5b200f811e5899d34947e66809bef7e586",
+        "repo_digests": [
+          "alexgshaw/git-leak-recovery@sha256:62160e522a4238b8bcd522411ea97b5b200f811e5899d34947e66809bef7e586"
+        ],
+        "created": "2025-10-28T22:02:30.541517208Z",
+        "architecture": "amd64",
+        "os": "linux",
+        "config_user": null,
+        "config_working_dir": "/app",
+        "rootfs_layers": [
+          "sha256:073ec47a8c22dcaa4d6e5758799ccefe2f9bde943685830b1bf6fd2395f5eabc",
+          "sha256:e54d39dd357723fa47bd55e1fcadadd4e4882e84f0c323ad63413edd1a650020",
+          "sha256:cdef94084a438ea2a2abdef84481b47f1892e9a377c15cf584f7b9c6cf5fd02f",
+          "sha256:e54d39dd357723fa47bd55e1fcadadd4e4882e84f0c323ad63413edd1a650020",
+          "sha256:28b1dd691dc0728491c81c0872ce7c2d151a6f1fb7a69e4e4e634230ce9ce44c",
+          "sha256:fa29609e6af79c5e5bfbb9477ef484e0d410d8c3a50ae696e63d2fa8c78b858a"
+        ],
+        "stdout_sha256": "9e1a96e343556ea1769a676d7bc9b1e5fb86bdc292f1520bd52a7f6b1700c441",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "order": 8,
+      "task_id": "headless-terminal",
+      "task_name": "terminal-bench/headless-terminal",
+      "task_path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/headless-terminal",
+      "task_toml": {
+        "path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/headless-terminal/task.toml",
+        "sha256": "abe0de1ac3adff1fbf0e22e1765efbc061a412891fd255926ed92a5ccacf69e6",
+        "size_bytes": 938
+      },
+      "public_task": {
+        "description": "Implement a Python class that provides a headless terminal interface supporting interactive bash shells, modifier keys, startup file sourcing, and state persistence between commands.",
+        "difficulty": "medium",
+        "category": "software-engineering"
+      },
+      "environment": {
+        "docker_image": "alexgshaw/headless-terminal:20251031",
+        "build_timeout_sec": 600.0,
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true
+      },
+      "agent_timeout_sec": 900.0,
+      "verifier_timeout_sec": 900.0,
+      "hidden_material_read": false,
+      "historical_public_task_toml": {
+        "path": "<PROJECT_ROOT>/cache/parent-official-tb21-metadata/tasks/headless-terminal/task.toml",
+        "sha256": "abe0de1ac3adff1fbf0e22e1765efbc061a412891fd255926ed92a5ccacf69e6",
+        "size_bytes": 938,
+        "matches_prepared_public_toml": true,
+        "comparison_scope": "task.toml bytes only; no solution or verifier source read"
+      },
+      "docker_image": {
+        "status": "observed",
+        "image_id": "sha256:eb7e209672bf6cef2785fafd9e13509b10626c327bcc2b37f5bf40ca83eaf3aa",
+        "repo_digests": [
+          "alexgshaw/headless-terminal@sha256:eb7e209672bf6cef2785fafd9e13509b10626c327bcc2b37f5bf40ca83eaf3aa"
+        ],
+        "created": "2025-10-28T21:57:44.412695323Z",
+        "architecture": "amd64",
+        "os": "linux",
+        "config_user": null,
+        "config_working_dir": "/app",
+        "rootfs_layers": [
+          "sha256:eb5f13bce9936c760b9fa73aeb1b608787daa36106cc888104132e353ed37252",
+          "sha256:2a9c7b727490d026db269bdf2bf74ce80e17abe26fc4dd99bd53b3d1686e58dc",
+          "sha256:1ce62254e2a41ba52d6f4edab1c02c6733a219d0b27ff7b0d495f2987fc165ad",
+          "sha256:56ffb1fa8b190de199776ee5e02b4c9d482f5300e4aaa162e66fe09778c1a243",
+          "sha256:bb90eb063b6e7bec0bb1f27ff7d6d84dbd5f9c1c3932cbec014527582d94733c",
+          "sha256:97f9ca83a7ed4fa6c4cf21a45bd521e29d864b4a67ac8f211276ea9b0e8dad2b",
+          "sha256:9f6da193f24bf903e62ad0b6f53914f343f8344a2cdc678150d8fdc86df36c0b"
+        ],
+        "stdout_sha256": "8a185b71f1d26e717ddc34d4e6ab16c69dfa7abc7d1a36e33033b713d3c3b13d",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "order": 9,
+      "task_id": "kv-store-grpc",
+      "task_name": "terminal-bench/kv-store-grpc",
+      "task_path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/kv-store-grpc",
+      "task_toml": {
+        "path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/kv-store-grpc/task.toml",
+        "sha256": "6ff0f30a526bfff86a67b0b53439b9965229c0f368167dc1a5d05f34d82299a3",
+        "size_bytes": 987
+      },
+      "public_task": {
+        "description": "Evaluates the ability to build and deploy a gRPC-based key-value store server with Protocol Buffers, including service definition, code generation, implementation, and background process management.",
+        "difficulty": "medium",
+        "category": "software-engineering"
+      },
+      "environment": {
+        "docker_image": "alexgshaw/kv-store-grpc:20251031",
+        "build_timeout_sec": 600.0,
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true
+      },
+      "agent_timeout_sec": 900.0,
+      "verifier_timeout_sec": 900.0,
+      "hidden_material_read": false,
+      "historical_public_task_toml": {
+        "path": "<PROJECT_ROOT>/cache/parent-official-tb21-metadata/tasks/kv-store-grpc/task.toml",
+        "sha256": "6ff0f30a526bfff86a67b0b53439b9965229c0f368167dc1a5d05f34d82299a3",
+        "size_bytes": 987,
+        "matches_prepared_public_toml": true,
+        "comparison_scope": "task.toml bytes only; no solution or verifier source read"
+      },
+      "docker_image": {
+        "status": "observed",
+        "image_id": "sha256:3399400800dcb207634daa42bc1b052e831e285cc9d221eea66c47bc0fc79791",
+        "repo_digests": [
+          "alexgshaw/kv-store-grpc@sha256:3399400800dcb207634daa42bc1b052e831e285cc9d221eea66c47bc0fc79791"
+        ],
+        "created": "2025-08-22T02:01:01.875738378Z",
+        "architecture": "amd64",
+        "os": "linux",
+        "config_user": null,
+        "config_working_dir": "/app",
+        "rootfs_layers": [
+          "sha256:eb5f13bce9936c760b9fa73aeb1b608787daa36106cc888104132e353ed37252",
+          "sha256:2a9c7b727490d026db269bdf2bf74ce80e17abe26fc4dd99bd53b3d1686e58dc",
+          "sha256:1ce62254e2a41ba52d6f4edab1c02c6733a219d0b27ff7b0d495f2987fc165ad",
+          "sha256:56ffb1fa8b190de199776ee5e02b4c9d482f5300e4aaa162e66fe09778c1a243",
+          "sha256:bb90eb063b6e7bec0bb1f27ff7d6d84dbd5f9c1c3932cbec014527582d94733c"
+        ],
+        "stdout_sha256": "eabf3ba93e7c9cfdf6194ef39542af0f5dae0c5f14c809bf5a82b43830fc11a0",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "order": 10,
+      "task_id": "polyglot-c-py",
+      "task_name": "terminal-bench/polyglot-c-py",
+      "task_path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/polyglot-c-py",
+      "task_toml": {
+        "path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/polyglot-c-py/task.toml",
+        "sha256": "d31b9f60c47eed0d79e10d3be8fd56a23e50b3986606e3f2546863d44ac9a9ea",
+        "size_bytes": 850
+      },
+      "public_task": {
+        "description": "Create a single polyglot source file that computes Fibonacci numbers when executed as both Python 3 and C code.",
+        "difficulty": "medium",
+        "category": "software-engineering"
+      },
+      "environment": {
+        "docker_image": "alexgshaw/polyglot-c-py:20251031",
+        "build_timeout_sec": 600.0,
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true
+      },
+      "agent_timeout_sec": 900.0,
+      "verifier_timeout_sec": 900.0,
+      "hidden_material_read": false,
+      "historical_public_task_toml": {
+        "path": "<PROJECT_ROOT>/cache/parent-official-tb21-metadata/tasks/polyglot-c-py/task.toml",
+        "sha256": "d31b9f60c47eed0d79e10d3be8fd56a23e50b3986606e3f2546863d44ac9a9ea",
+        "size_bytes": 850,
+        "matches_prepared_public_toml": true,
+        "comparison_scope": "task.toml bytes only; no solution or verifier source read"
+      },
+      "docker_image": {
+        "status": "observed",
+        "image_id": "sha256:0f1c3b7816d70cf5551573fd6aeef76893f2ae3000be2419997b6871b5d987ed",
+        "repo_digests": [
+          "alexgshaw/polyglot-c-py@sha256:0f1c3b7816d70cf5551573fd6aeef76893f2ae3000be2419997b6871b5d987ed"
+        ],
+        "created": "2025-10-22T04:44:19.010825678Z",
+        "architecture": "amd64",
+        "os": "linux",
+        "config_user": null,
+        "config_working_dir": "/app",
+        "rootfs_layers": [
+          "sha256:073ec47a8c22dcaa4d6e5758799ccefe2f9bde943685830b1bf6fd2395f5eabc",
+          "sha256:e54d39dd357723fa47bd55e1fcadadd4e4882e84f0c323ad63413edd1a650020",
+          "sha256:9fbc763b86cd2b95281f4d3df5c9c3499c5afcdd0cfbcbedd7562b7c0aea9bc3"
+        ],
+        "stdout_sha256": "dd7c9b3d3135df8c1666f2b0b8cc2f748f901436a7bc5d554f2ce43dffa1e159",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "order": 11,
+      "task_id": "pypi-server",
+      "task_name": "terminal-bench/pypi-server",
+      "task_path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/pypi-server",
+      "task_toml": {
+        "path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/pypi-server/task.toml",
+        "sha256": "07c39d7a733c89adadf74bb63a3e906c3694feb6c490d5fc85ac187c003fd447",
+        "size_bytes": 888
+      },
+      "public_task": {
+        "description": "Evaluates the ability to create a Python package, build it, set up a local PyPI server, and make the package installable from the server.",
+        "difficulty": "medium",
+        "category": "software-engineering"
+      },
+      "environment": {
+        "docker_image": "alexgshaw/pypi-server:20251031",
+        "build_timeout_sec": 600.0,
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true
+      },
+      "agent_timeout_sec": 900.0,
+      "verifier_timeout_sec": 900.0,
+      "hidden_material_read": false,
+      "historical_public_task_toml": {
+        "path": "<PROJECT_ROOT>/cache/parent-official-tb21-metadata/tasks/pypi-server/task.toml",
+        "sha256": "07c39d7a733c89adadf74bb63a3e906c3694feb6c490d5fc85ac187c003fd447",
+        "size_bytes": 888,
+        "matches_prepared_public_toml": true,
+        "comparison_scope": "task.toml bytes only; no solution or verifier source read"
+      },
+      "docker_image": {
+        "status": "observed",
+        "image_id": "sha256:d18bb30f47c7dcaa3acdbc31ac7413c98eadca2ea16540bbd380f2f063b95276",
+        "repo_digests": [
+          "alexgshaw/pypi-server@sha256:d18bb30f47c7dcaa3acdbc31ac7413c98eadca2ea16540bbd380f2f063b95276"
+        ],
+        "created": "2025-10-31T02:59:51.727034018Z",
+        "architecture": "amd64",
+        "os": "linux",
+        "config_user": null,
+        "config_working_dir": "/app",
+        "rootfs_layers": [
+          "sha256:eb5f13bce9936c760b9fa73aeb1b608787daa36106cc888104132e353ed37252",
+          "sha256:2a9c7b727490d026db269bdf2bf74ce80e17abe26fc4dd99bd53b3d1686e58dc",
+          "sha256:1ce62254e2a41ba52d6f4edab1c02c6733a219d0b27ff7b0d495f2987fc165ad",
+          "sha256:56ffb1fa8b190de199776ee5e02b4c9d482f5300e4aaa162e66fe09778c1a243",
+          "sha256:e59b8037d8f594140ee103a8faf8d348152ce510741314d52eb6f0160f8fcaaa",
+          "sha256:0de667ce65b8072c64a57caed2e7ad348f701ce7b69fb03abc8ee1d3168821d4",
+          "sha256:ed13d92deb687c0b73e8738d04cc14ac241ed45d30c77bd560b2b984194d0f1d",
+          "sha256:6923edfc82c0ca494a4b206ae505a789d397391c4d0ca8067095b8ff48fb506d"
+        ],
+        "stdout_sha256": "722a7980925edb5c20510a52b9d819b85b36c479ca54ea21fc6d938a4a783bd6",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "order": 12,
+      "task_id": "schemelike-metacircular-eval",
+      "task_name": "terminal-bench/schemelike-metacircular-eval",
+      "task_path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/schemelike-metacircular-eval",
+      "task_toml": {
+        "path": "/home/<T2_HOST>/ray/hicache-tb21/src/terminal-bench-2-1/tasks/schemelike-metacircular-eval/task.toml",
+        "sha256": "8dae8eb226183b0ca92331c1106152a7abc93b03b4e5a95291b86a4ddc9b44e0",
+        "size_bytes": 918
+      },
+      "public_task": {
+        "description": "Evaluates the ability to implement a metacircular evaluator in Scheme that can interpret itself and a comprehensive suite of Scheme programs.",
+        "difficulty": "medium",
+        "category": "software-engineering"
+      },
+      "environment": {
+        "docker_image": "alexgshaw/schemelike-metacircular-eval:20251031",
+        "build_timeout_sec": 600.0,
+        "cpus": 1,
+        "memory_mb": 2048,
+        "storage_mb": 10240,
+        "gpus": 0,
+        "allow_internet": true
+      },
+      "agent_timeout_sec": 2400.0,
+      "verifier_timeout_sec": 2400.0,
+      "hidden_material_read": false,
+      "historical_public_task_toml": {
+        "path": "<PROJECT_ROOT>/cache/parent-official-tb21-metadata/tasks/schemelike-metacircular-eval/task.toml",
+        "sha256": "8dae8eb226183b0ca92331c1106152a7abc93b03b4e5a95291b86a4ddc9b44e0",
+        "size_bytes": 918,
+        "matches_prepared_public_toml": true,
+        "comparison_scope": "task.toml bytes only; no solution or verifier source read"
+      },
+      "docker_image": {
+        "status": "observed",
+        "image_id": "sha256:b485be38bf80d56c1a4cd9da95bbf7ec129dc03f6786b86c0525518a96f6d1db",
+        "repo_digests": [
+          "alexgshaw/schemelike-metacircular-eval@sha256:b485be38bf80d56c1a4cd9da95bbf7ec129dc03f6786b86c0525518a96f6d1db"
+        ],
+        "created": "2025-09-13T18:03:22.260142148Z",
+        "architecture": "amd64",
+        "os": "linux",
+        "config_user": null,
+        "config_working_dir": "/app",
+        "rootfs_layers": [
+          "sha256:eb5f13bce9936c760b9fa73aeb1b608787daa36106cc888104132e353ed37252",
+          "sha256:2a9c7b727490d026db269bdf2bf74ce80e17abe26fc4dd99bd53b3d1686e58dc",
+          "sha256:1ce62254e2a41ba52d6f4edab1c02c6733a219d0b27ff7b0d495f2987fc165ad",
+          "sha256:56ffb1fa8b190de199776ee5e02b4c9d482f5300e4aaa162e66fe09778c1a243",
+          "sha256:bb90eb063b6e7bec0bb1f27ff7d6d84dbd5f9c1c3932cbec014527582d94733c",
+          "sha256:c96108d2a8821d735eb4ac06df2b97d4c972d0dc4cfc7d25b72f3d05779d5931",
+          "sha256:59dbc166fce41bd51ff14d0a04e446a30a0317e353d4d0c258547ea90078ac5a"
+        ],
+        "stdout_sha256": "b143ef14034a478362f474f3d9e406e2f54449106a299c126f579944f1de1632",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "hidden_material_read": false,
+  "source_policy": "public task.toml and optional docker image inspect only; solution/verifier source was not read"
+}

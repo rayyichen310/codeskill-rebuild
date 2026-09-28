@@ -34,6 +34,13 @@ class R012EntrypointTest(unittest.TestCase):
         value["PYTHONPATH"] = str(root / "src")
         return value
 
+    def test_default_event_prompt_declares_raw_evidence_sidecar_contract(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        prompt = (root / "prompts" / "custom" / "r012_fig07_event_extraction_evidence.md").read_text(encoding="utf-8")
+        self.assertIn('"evidence":{"trigger_step_ids"', prompt)
+        self.assertIn("exact `source_entry_id` values", prompt)
+        self.assertIn("Do not cite native compaction controls", prompt)
+
     def test_event_runner_plan_only_writes_three_attempt_schedule_without_calls(self) -> None:
         root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as tmp:

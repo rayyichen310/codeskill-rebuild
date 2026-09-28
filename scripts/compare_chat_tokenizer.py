@@ -26,9 +26,11 @@ def main() -> None:
 
     request_record = json.loads(args.request.read_text(encoding="utf-8"))
     response_record = json.loads(args.response.read_text(encoding="utf-8"))
-    messages = request_record["request"]["messages"]
+    request_payload = request_record["request"]
+    messages = request_payload["messages"]
+    request_options = {key: value for key, value in request_payload.items() if key != "messages"}
     counter = ServerMessageTokenCounter(args.base_url, timeout_seconds=args.timeout)
-    counted = counter(messages)
+    counted = counter(messages, request_options=request_options)
     usage = response_record.get("parsed_response", {}).get("usage", {})
     observed = usage.get("prompt_tokens")
     write_json(
@@ -40,6 +42,7 @@ def main() -> None:
             "fixture": False,
             "source_request": {"path": str(args.request), "sha256": sha256_file(args.request)},
             "source_response": {"path": str(args.response), "sha256": sha256_file(args.response)},
+            "effective_request_options": request_options,
             "server_message_token_count": counted,
             "saved_chat_usage_prompt_tokens": observed,
             "counts_match": isinstance(observed, int) and counted == observed,

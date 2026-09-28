@@ -136,13 +136,19 @@ def _outcome_summary(result: Any, reward: str | None) -> dict[str, Any]:
     return summary
 
 
-def normalize_openclaw_trial(trial_dir: Path, *, expected_session_sha256: str | None = None) -> dict[str, Any]:
+def normalize_openclaw_trial(
+    trial_dir: Path,
+    *,
+    expected_session_sha256: str | None = None,
+    session_path_override: Path | None = None,
+) -> dict[str, Any]:
     """Normalize one authorized raw OpenClaw trial.
 
     ``openclaw.session.jsonl`` is authoritative because ATIF may replace an
-    assistant message with a placeholder.  The function intentionally does
-    not read run.env, full effective configuration, verifier internals, or
-    legacy CODESKILL artifacts.
+    assistant message with a placeholder.  Callers may provide a separately
+    materialized session path for an immutable raw transcript source.  The
+    function intentionally does not read run.env, full effective
+    configuration, verifier internals, or legacy CODESKILL artifacts.
     """
 
     trial_dir = Path(trial_dir)
@@ -150,7 +156,7 @@ def normalize_openclaw_trial(trial_dir: Path, *, expected_session_sha256: str | 
     # parent directory.  Only the separate Spine B run itself is disallowed.
     if any("spineb" in part.lower() for part in trial_dir.parts):
         raise TraceImportError("Spine traces are not permitted as v1 primary source")
-    session_path = trial_dir / "agent" / "openclaw.session.jsonl"
+    session_path = session_path_override or trial_dir / "agent" / "openclaw.session.jsonl"
     instruction_path = trial_dir / "agent" / "instruction.txt"
     config_path = trial_dir / "config.json"
     result_path = trial_dir / "result.json"
@@ -162,9 +168,30 @@ def normalize_openclaw_trial(trial_dir: Path, *, expected_session_sha256: str | 
         raise TraceImportError("Raw session hash differs from approved manifest")
     config = _load_json(config_path)
     task = config.get("task", {})
-    task_name = task.get("name")
-    if not isinstance(task_name, str):
-        raise TraceImportError("Trial config has no task.name")
+    if not isinstance(task, dict):
+        raise TraceImportError("Trial config has no task object")
+    result = _load_json(result_path) if result_path.is_file() else None
+    configured_task_name = task.get("name")
+    result_task_name = result.get("task_name") if isinstance(result, dict) else None
+    task_path = task.get("path")
+    path_leaf = Path(task_path).name if isinstance(task_path, str) and task_path else None
+    # Harbor 0.16.1 leaves the local TaskSpec name unset.  Its completed
+    # result carries the canonical Harbor task name, while the config path
+    # supplies an additional identity check.  Preserve the older explicit
+    # config-name path and fail closed when available identity sources disagree.
+    if isinstance(configured_task_name, str) and configured_task_name:
+        task_name = configured_task_name
+    elif isinstance(result_task_name, str) and result_task_name:
+        task_name = result_task_name
+    elif isinstance(path_leaf, str) and path_leaf:
+        task_name = f"terminal-bench/{path_leaf}"
+    else:
+        raise TraceImportError("Trial config and result have no task identity")
+    if path_leaf and path_leaf != task_name.rsplit("/", 1)[-1]:
+        raise TraceImportError("Trial config task path disagrees with its task identity")
+    if isinstance(result_task_name, str) and result_task_name:
+        if result_task_name.rsplit("/", 1)[-1] != task_name.rsplit("/", 1)[-1]:
+            raise TraceImportError("Trial result task name disagrees with its task identity")
 
     raw_events: list[dict[str, Any]] = []
     for lineno, line in enumerate(session_path.read_text(encoding="utf-8").splitlines(), start=1):
@@ -251,7 +278,6 @@ def normalize_openclaw_trial(trial_dir: Path, *, expected_session_sha256: str | 
     orphan_results = sorted(set(tool_results) - set(tool_calls))
     if orphan_results:
         raise TraceImportError(f"Tool results refer to unknown calls: {orphan_results}")
-    result = _load_json(result_path) if result_path.is_file() else None
     reward = reward_path.read_text(encoding="utf-8").strip() if reward_path.is_file() else None
     truncated_markers = [
         entry["source_entry_id"]

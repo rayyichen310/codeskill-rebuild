@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import json
 import unittest
 
 from codeskill_rebuild.compaction import action_observation_segments, expand_evidence_fragments
-from codeskill_rebuild.manager_projection import PROJECTION_VERSION, project_trace_for_manager
+from codeskill_rebuild.manager_projection import (
+    HISTORICAL_THINKING_POLICY_VERSION,
+    PROJECTION_VERSION,
+    ProjectionError,
+    project_historical_thinking,
+    project_trace_for_manager,
+)
 
 
 def trace(*, divergent: bool = False) -> dict:
@@ -34,6 +41,59 @@ def trace(*, divergent: bool = False) -> dict:
 
 
 class ManagerProjectionTest(unittest.TestCase):
+    def test_keep_is_default_and_byte_equivalent(self) -> None:
+        source = trace()
+        source["entries"] = source["steps"]
+        projected = project_historical_thinking(source)
+        self.assertEqual(projected["policy"], "keep")
+        self.assertEqual(projected["policy_version"], HISTORICAL_THINKING_POLICY_VERSION)
+        self.assertEqual(projected["manager_trace"], source)
+        self.assertIsNot(projected["manager_trace"], source)
+        self.assertEqual(projected["mapping"]["recognized_fields_removed"], [])
+
+    def test_exclude_removes_only_recognized_history_reasoning_and_keeps_evidence(self) -> None:
+        source = trace()
+        source["entries"] = source["steps"]
+        source["steps"][1]["content"][1]["text"] = "Visible answer literally mentions thinking and reasoning."
+        source["steps"][2]["content"][0]["text"] = "tool output: thinking must remain visible"
+        source["entries"] = [dict(item) for item in source["steps"]]
+        original = json.loads(json.dumps(source))
+
+        projected = project_historical_thinking(source, policy="exclude")
+        value = projected["manager_trace"]
+        self.assertEqual(source, original)
+        self.assertEqual([item["type"] for item in value["steps"][1]["content"]], ["text", "tool_call"])
+        self.assertNotIn("thinking", value["steps"][1]["assistant"])
+        self.assertEqual(value["steps"][1]["assistant"]["text"], ["visible text"])
+        self.assertEqual(value["steps"][1]["assistant"]["tool_calls"], source["steps"][1]["assistant"]["tool_calls"])
+        self.assertIn("thinking and reasoning", value["steps"][1]["content"][0]["text"])
+        self.assertIn("thinking must remain", value["steps"][2]["content"][0]["text"])
+        self.assertEqual(value["source"], source["source"])
+        self.assertEqual(value["outcome"], source["outcome"])
+        self.assertEqual(
+            [item["source_entry_id"] for item in value["steps"]],
+            [item["source_entry_id"] for item in source["steps"]],
+        )
+        self.assertEqual(len(projected["mapping"]["recognized_fields_removed"]), 4)
+        self.assertTrue(projected["mapping"]["exclusion_complete_for_recognized_schema"])
+
+    def test_exclude_preserves_and_reports_unknown_reasoning_shape(self) -> None:
+        source = trace()
+        source["steps"][1]["content"].append(
+            {"type": "reasoning", "text": "known text", "signature": "unknown-extra-field"}
+        )
+        source["steps"][1]["assistant"]["reasoning"] = {"nested": "unknown"}
+        projected = project_historical_thinking(source, policy="exclude")
+        assistant = projected["manager_trace"]["steps"][1]
+        self.assertEqual(assistant["content"][-1]["signature"], "unknown-extra-field")
+        self.assertEqual(assistant["assistant"]["reasoning"], {"nested": "unknown"})
+        self.assertEqual(len(projected["mapping"]["unrecognized_reasoning_like_fields"]), 2)
+        self.assertFalse(projected["mapping"]["exclusion_complete_for_recognized_schema"])
+
+    def test_unknown_policy_fails_closed(self) -> None:
+        with self.assertRaisesRegex(ProjectionError, "historical thinking policy"):
+            project_historical_thinking(trace(), policy="drop-everything")
+
     def test_strict_duplicates_are_removed_without_losing_source_blocks_or_metadata(self) -> None:
         projection = project_trace_for_manager(trace())
         steps = projection["manager_trace"]["steps"]

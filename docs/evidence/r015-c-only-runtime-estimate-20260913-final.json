@@ -1,0 +1,86 @@
+{
+  "schema_version": 3,
+  "kind": "r015_c_only_runtime_estimate",
+  "estimate_id": "r015-c-only-runtime-estimate-20260913-final",
+  "generated_at_utc": "2026-09-13T14:15:00Z",
+  "scope": "planning evidence only; no formal C-only Terminal-Bench trial was started",
+  "baseline_manifest": {
+    "path": "docs/baselines/r015-legacy-coding-baseline-20260913.json",
+    "sha256": "4b2daf171149dc50868179ee5afe86def06949fd33e04934eef12859b5c97170"
+  },
+  "gpu_evidence": {
+    "path": "docs/evidence/r015-c-only-<MODEL_SERVICE_HOST>-job-501-20260913-final-readonly.json",
+    "sha256": "9bb02354e5d10dba8c6a2d160a1d32e3ca3261145ad9bff1a087291bf98d28e6",
+    "job_id": "501",
+    "state": "RUNNING",
+    "captured_at_utc": "2026-09-13T13:30:57Z",
+    "time_left_seconds_at_capture": 91980,
+    "time_left_hours_at_capture": 25.55,
+    "end_time_utc": "2026-09-14T23:03:57"
+  },
+  "observed_baseline": {
+    "historical_trials": 12,
+    "completed_trials": 11,
+    "infra_trials": 1,
+    "all_trial_wall_seconds": 6522.572741,
+    "all_trial_wall_hours": 1.8118257613888888,
+    "model_calls": 245,
+    "completed_call_wall_ratio_median_seconds": 18.90019517241379,
+    "two_round_replay_wall_seconds": 13045.145482,
+    "two_round_replay_wall_hours": 3.6236515227777777,
+    "two_round_model_calls": 490
+  },
+  "prepared_call_budget_model": {
+    "c_only_trials": 24,
+    "per_trial_post_trial_call_breakdown": {
+      "event_initial_attempts_max": 3,
+      "description_extraction_max": 1,
+      "task_pairing_max": 1,
+      "task_extraction_max": 1,
+      "fig9_for_extracted_candidates_max": 4,
+      "fig8_for_actually_supplied_skills_max": 3,
+      "fig9_for_evolved_supplied_skills_max": 3
+    },
+    "post_trial_model_calls_per_trial_range": [
+      1,
+      16
+    ],
+    "post_trial_model_calls_total_range": [
+      24,
+      384
+    ],
+    "post_trial_proxy_seconds_range": [
+      453.60468413793103,
+      7257.6749462068965
+    ],
+    "manager_timeout_seconds_for_hard_envelope": 300
+  },
+  "assumptions": {
+    "startup_and_serialization_allowance_seconds": 900,
+    "unknown_context_and_task_tail_contingency_seconds": 21600,
+    "manager_latency_proxy": "observed historical completed-call median; new C-only manager/Harbor timings are not yet observed",
+    "reason": "The maximum call count includes every allowed event attempt, one D01 description extraction, one D02 MiniLM ranking plus DeepSeek related-group selection, one Fig.6 task extraction, four Fig.9 extraction candidates, and three actually supplied skills each receiving Fig.8 plus conditional Fig.9. The tail allowance covers task-image startup, native compaction, and network variance and is not a completion guarantee."
+  },
+  "estimate": {
+    "lower_seconds": 14398.75016613793,
+    "upper_seconds": 42802.8204282069,
+    "lower_hours": 3.9996528239272027,
+    "upper_hours": 11.889672341168582,
+    "hard_timeout_envelope_seconds": 150745.145482,
+    "hard_timeout_envelope_hours": 41.87365152277778,
+    "remaining_to_upper_ratio": 2.1489238110903908,
+    "remaining_to_hard_timeout_envelope_ratio": 0.6101689026595092,
+    "sufficient_for_observed_latency_planning": true,
+    "sufficient_for_full_300_second_timeout_envelope": false,
+    "resubmit_job": false,
+    "decision": "Job 501 was RUNNING with both serving processes at the read-only snapshot and 25.55 hours remaining. The restored D02 pairing adds one manager call to the per-trial maximum; the measured-latency planning upper estimate is 11.89 hours, so no replacement job was submitted. The hard 300-second envelope is 41.87 hours and is not a completion guarantee."
+  },
+  "required_live_update_before_formal_start": [
+    "effective Harbor build/agent/verifier/outer timeout and image digest per trial",
+    "actual C-only solver/model-call and post-trial manager durations",
+    "current Slurm time_left and serving PID/port ownership",
+    "native compaction and event reinjection observations",
+    "the recorded runtime-parity decision option before start"
+  ],
+  "formal_campaign_started": false
+}

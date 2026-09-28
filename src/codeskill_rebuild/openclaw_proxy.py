@@ -257,14 +257,36 @@ class DurableProxyService:
                     details={"max_forwarded_requests": self.max_forwarded_requests, "forwarded_request_count": int(self.overlay.state.get("request_count", 0))},
                 )
             if self.max_output_tokens is not None:
-                value = payload.get("max_tokens")
-                if isinstance(value, bool) or not isinstance(value, int) or value <= 0 or value > self.max_output_tokens:
+                # OpenClaw 2026.9.3 uses the current OpenAI spelling
+                # ``max_completion_tokens``.  Keep accepting the legacy
+                # ``max_tokens`` field for the existing R012 callers, while
+                # applying the same hard cap to either field and rejecting a
+                # payload that supplies an invalid value in either spelling.
+                requested_limits = {
+                    field: payload[field]
+                    for field in ("max_tokens", "max_completion_tokens")
+                    if field in payload
+                }
+                valid_limits = bool(requested_limits) and all(
+                    isinstance(value, int)
+                    and not isinstance(value, bool)
+                    and 0 < value <= self.max_output_tokens
+                    for value in requested_limits.values()
+                )
+                if not valid_limits:
                     return reject_limit(
                         status=400,
                         code="codeskill_max_tokens_exceeded",
-                        message=f"CODESKILL max_tokens must be an integer from 1 through {self.max_output_tokens}",
+                        message=(
+                            "CODESKILL max_tokens or max_completion_tokens must be "
+                            f"an integer from 1 through {self.max_output_tokens}"
+                        ),
                         outcome="output_limit_rejected",
-                        details={"max_output_tokens": self.max_output_tokens, "requested_max_tokens": value},
+                        details={
+                            "max_output_tokens": self.max_output_tokens,
+                            "requested_max_tokens": payload.get("max_tokens"),
+                            "requested_max_completion_tokens": payload.get("max_completion_tokens"),
+                        },
                     )
             remaining_timeout: int | None = None
             if self.trial_deadline_monotonic is not None:

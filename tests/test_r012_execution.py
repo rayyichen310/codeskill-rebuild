@@ -10,6 +10,8 @@ from codeskill_rebuild.bank import SkillBank
 from codeskill_rebuild.r012_execution import (
     R012EvolutionMaintenanceExecutor,
     R012ExecutionError,
+    evolution_messages,
+    inspect_full_lifecycle_evidence,
     profile_sha256,
     validate_selection_manifest,
 )
@@ -197,11 +199,31 @@ class R012ExecutionTest(unittest.TestCase):
         self.assertEqual(coordinator.instances["target"]["release_state"], "released")
         self.assertEqual(len([skill for skill in coordinator.arm_banks["full"].skills if skill["status"] == "active"]), 2)
         self.assertEqual({item["status"] for item in journal_values}, {"evolution_validated", "maintenance_applied_to_staged_bank"})
+        evolution_payload = json.loads(manager.calls[0]["messages"][1]["content"])
+        self.assertEqual(evolution_payload["provided_skills"][0]["skill"]["granularity"], "event-driven")
+        self.assertEqual(evolution_payload["provided_skills"][0]["skill"]["skill_id"], base["skill_id"])
+        self.assertEqual(evolution_payload["new_trajectory_evidence"]["source"]["canonical_instance_id"], "target")
         operation = coordinator.arm_banks["full"].operations[-1]
         self.assertEqual(operation["evidence"]["kind"], "r012_evolution_then_maintenance")
         self.assertEqual(operation["evidence"]["evolution"]["call_id"], "call-0001")
         self.assertEqual(set(operation["candidate"]["provenance"]["source_instance_ids"]), {"source", "target"})
         self.assertIn(base["skill_id"], operation["candidate"]["provenance"]["parent_skill_ids"])
+
+    def test_fig8_payload_projects_internal_granularity_without_mutating_supplied_evidence(self) -> None:
+        injected = supplied_record(
+            "target:full:repeat",
+            {**BASE_CANDIDATE, "skill_id": "supplied-id", "version": 1},
+        )["event_selection"][0]["injected_skills"][0]
+        supplied = {"skill": injected["skill"], "injection_evidence": [{"attempt_ordinal": 1}]}
+        messages = evolution_messages(
+            supplied=[supplied],
+            trajectory_evidence={"source": {"canonical_instance_id": "target"}, "steps": []},
+            paper_prompt="fig8",
+        )
+        payload = json.loads(messages[1]["content"])
+        self.assertEqual(payload["provided_skills"][0]["skill"]["granularity"], "event-driven")
+        self.assertEqual(supplied["skill"]["granularity"], "event")
+        self.assertEqual(payload["provided_skills"][0]["injection_evidence"], [{"attempt_ordinal": 1}])
 
     def test_manager_cannot_evolve_an_unsupplied_target(self) -> None:
         coordinator, trial_id, base = self._frozen_full_trial()
@@ -312,6 +334,127 @@ class R012ExecutionTest(unittest.TestCase):
             released = coordinator.release_updates("target", ordered_trial_ids=[trial_id], apply_update=executor.apply_update)
         self.assertEqual(manager.calls, [])
         self.assertEqual(released[0]["update_result"]["proxy_outcomes"], ["transport_open_error"])
+
+    def test_explicit_pre_request_infra_failure_allows_no_supplied_release(self) -> None:
+        trial_id = "target:full:repeat"
+        evidence = {
+            "kind": "r012_finished_trial_evidence",
+            "classification": "infra_failure",
+            "infra_failure": {
+                "trial_id": trial_id,
+                "instance_id": "target",
+                "error_type": "AgentSetupError",
+                "error": "the agent image failed before its first proxy request",
+                "raw_evidence": {"harbor_log": "harbor/trial.log", "return_code": 1},
+            },
+            "proxy_attempt_records": [],
+            "trajectory_evidence": None,
+        }
+        inspected = inspect_full_lifecycle_evidence(
+            trial_id=trial_id,
+            instance_id="target",
+            result_evidence=evidence,
+        )
+        self.assertEqual(inspected["classification"], "infra_failure")
+        self.assertEqual(inspected["supplied"], [])
+
+    def test_unclassified_empty_proxy_evidence_still_fails_closed(self) -> None:
+        with self.assertRaisesRegex(R012ExecutionError, "at least one copied proxy attempt"):
+            inspect_full_lifecycle_evidence(
+                trial_id="target:full:repeat",
+                instance_id="target",
+                result_evidence={"proxy_attempt_records": [], "trajectory_evidence": None},
+            )
+
+    def test_each_new_arm_a_candidate_uses_fig9_add_merge_or_drop(self) -> None:
+        candidate = {
+            **BASE_CANDIDATE,
+            "title": "Use a fresh observation before retrying",
+            "provenance": {
+                "source_instance_ids": ["source-instance"],
+                "source_instance_ids_raw": ["terminal-bench/source-instance"],
+                "parent_skill_ids": [],
+            },
+        }
+        for action in ("add", "merge", "drop"):
+            with self.subTest(action=action), tempfile.TemporaryDirectory() as tmp:
+                bank = SkillBank.empty("terminal-bench")
+                existing = bank.apply(
+                    operation_id="existing-skill",
+                    decision="add",
+                    candidate=BASE_CANDIDATE,
+                    source_instance_ids=["existing-source"],
+                    evidence={"fixture": True},
+                )
+                response = {"action": action, "reason": f"fixture {action} decision"}
+                if action == "merge":
+                    response["merge_target_skill_id"] = existing["result_skill_id"]
+                    response["skill"] = {
+                        "title": "Merged fresh-observation check",
+                        "granularity": "event-driven",
+                        "when_to_apply": "After a command returns a diagnostic",
+                        "rules": ["Use the concrete diagnostic before retrying."],
+                    }
+                manager = FakeManager([response])
+                executor = R012EvolutionMaintenanceExecutor(
+                    manager=manager,
+                    encoder=FakeEncoder(),
+                    journal_root=Path(tmp) / "journals",
+                    instance_id="target",
+                    profile=PROFILE,
+                    selections={},
+                    maintenance_prompt="fixture Fig.9 prompt",
+                )
+                applied = executor.apply_extracted_candidate_maintenance(
+                    trial_id="target:C:development",
+                    bank=bank,
+                    candidate=candidate,
+                    candidate_ordinal=1,
+                    candidate_evidence={"kind": "fixture_arm_a_candidate", "source_arm": "A"},
+                )
+                self.assertEqual(applied["operation"]["decision"], action)
+                self.assertEqual(applied["operation"]["evidence"]["kind"], "r015_arm_a_candidate_fig9_maintenance")
+                self.assertTrue(manager.calls[0]["purpose"].startswith("r015_arm_a_candidate_maintenance:target:C:development:001:"))
+                journal = read_json(executor._journal_path("target:C:development", "extracted-candidate-maintenance-001"))
+                self.assertEqual(journal["status"], "maintenance_applied_to_staged_bank")
+
+    def test_visible_maintenance_mode_keeps_decision_ids_in_journal(self) -> None:
+        candidate = {**BASE_CANDIDATE,
+                     "provenance": {"source_instance_ids": ["source-instance"],
+                                    "source_instance_ids_raw": ["source-instance"],
+                                    "parent_skill_ids": []}}
+        for action in ("add", "merge", "drop"):
+            with self.subTest(action=action), tempfile.TemporaryDirectory() as tmp:
+                bank = SkillBank.empty("terminal-bench")
+                existing = bank.apply(operation_id="existing", decision="add",
+                                      candidate=BASE_CANDIDATE,
+                                      source_instance_ids=["existing-source"], evidence={"fixture": True})
+                target_id = existing["result_skill_id"]
+                references = {"source_skill_ids": ["candidate", *([target_id] if action == "merge" else [])],
+                              "source_example_ids": []}
+                decision = {"action": action, "reason": f"visible {action}", "evidence": references}
+                if action == "merge":
+                    decision.update({"merge_target_skill_id": target_id,
+                                     "skill": {"title": "Merged diagnostic", "granularity": "event-driven",
+                                               "when_to_apply": "After a diagnostic.",
+                                               "rules": ["Read the diagnostic before retrying."]},
+                                     "code_example_changes": []})
+                manager = FakeManager([decision])
+                executor = R012EvolutionMaintenanceExecutor(
+                    manager=manager, encoder=FakeEncoder(), journal_root=Path(tmp) / "journals",
+                    instance_id="target", profile=PROFILE, selections={},
+                    maintenance_prompt="visible Fig.9", use_visible_maintenance=True)
+                applied = executor.apply_extracted_candidate_maintenance(
+                    trial_id="target:C:visible", bank=bank, candidate=candidate,
+                    candidate_ordinal=1, candidate_evidence={"fixture": True})
+                payload = json.loads(manager.calls[0]["messages"][1]["content"])
+                self.assertEqual(payload["candidate_skill"]["skill_id"], "candidate")
+                self.assertNotIn("provenance", json.dumps(payload))
+                self.assertEqual(applied["operation"]["evidence"]["maintenance"]["validated"]["evidence"],
+                                 references)
+                journal = read_json(executor._journal_path("target:C:visible",
+                                                           "extracted-candidate-maintenance-001"))
+                self.assertEqual(journal["validated"]["evidence"], references)
 
     def test_existing_pre_call_journal_blocks_replay_before_manager_contact(self) -> None:
         coordinator, trial_id, base = self._frozen_full_trial()

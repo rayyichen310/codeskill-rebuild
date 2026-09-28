@@ -1,18 +1,24 @@
 from __future__ import annotations
 
+import json
 import unittest
 import tempfile
+from copy import deepcopy
 from pathlib import Path
 
 from codeskill_rebuild.bank import BankError, SkillBank
 from codeskill_rebuild.context import plan_context
 from codeskill_rebuild.pipeline import (
+    internal_skill_to_paper,
+    maintenance_from_skills_messages as maintenance_messages,
     paper_skill_to_internal,
     validate_budget_summary,
     validate_event_evidence_repair,
     validate_event_extraction_with_evidence,
-    validate_maintenance,
+    validate_maintenance_from_skills as validate_maintenance,
     validate_pairing,
+    validate_task_candidate_with_evidence,
+    validate_task_extraction_with_evidence,
 )
 from codeskill_rebuild.runtime import build_initial_messages, inject_event_message
 from codeskill_rebuild.types import contract_from_files, write_contract_snapshot
@@ -23,6 +29,113 @@ def candidate(title: str = "Check compiler diagnostics") -> dict:
 
 
 class BankAndRuntimeTest(unittest.TestCase):
+    def test_single_task_candidate_requires_context_and_local_action_result_evidence(self) -> None:
+        trace = {
+            "source": {"instance_id": "source-alpha-0001"},
+            "steps": [
+                {"source_entry_id": "11111111-action", "role": "assistant", "assistant": {"tool_calls": [{"tool_call_id": "call-alpha"}]}},
+                {"source_entry_id": "22222222-result", "role": "toolResult", "tool_result": {"tool_call_id": "call-alpha"}},
+            ],
+        }
+        value = {
+            "action": "generate",
+            "skill": {
+                "title": "Bounded repair SOP",
+                "granularity": "general",
+                "when_to_apply": "When a bounded repair needs an observed validation loop.",
+                "rules": ["Inspect the failure, apply the repair, and observe validation."],
+            },
+            "candidate_context": {
+                "task_goal": "Repair the target",
+                "whole_task_outcome": "completed",
+                "hard_constraints": [],
+                "environment_assumptions": [],
+                "observed_results": ["validation completed"],
+                "known_limitations": [],
+            },
+            "evidence": {"rule_evidence": [{"rule_index": 0, "sources": [{"canonical_instance_id": "source-alpha-0001", "step_ids": ["11111111-action", "22222222-result"]}]}]},
+        }
+        checked = validate_task_candidate_with_evidence(value, trace, benchmark="terminal-bench")
+        self.assertEqual(checked["candidate_context"]["whole_task_outcome"], "completed")
+        with self.assertRaisesRegex(ValueError, "candidate_context"):
+            validate_task_candidate_with_evidence({key: item for key, item in value.items() if key != "candidate_context"}, trace, benchmark="terminal-bench")
+        missing_result = deepcopy(value)
+        missing_result["evidence"]["rule_evidence"][0]["sources"][0]["step_ids"] = ["11111111-action"]
+        with self.assertRaisesRegex(ValueError, "action followed by an observed tool result"):
+            validate_task_candidate_with_evidence(missing_result, trace, benchmark="terminal-bench")
+
+    def test_task_extraction_requires_each_rule_to_have_action_result_evidence_from_every_source(self) -> None:
+        traces = [
+            {
+                "source": {"instance_id": "source-alpha-0001"},
+                "steps": [
+                    {"source_entry_id": "11111111-action", "role": "assistant", "assistant": {"tool_calls": [{"tool_call_id": "call-alpha"}]}},
+                    {"source_entry_id": "22222222-result", "role": "toolResult", "tool_result": {"tool_call_id": "call-alpha"}},
+                ],
+            },
+            {
+                "source": {"instance_id": "source-beta-0002"},
+                "steps": [
+                    {"source_entry_id": "33333333-action", "role": "assistant", "assistant": {"tool_calls": [{"tool_call_id": "call-beta"}]}},
+                    {"source_entry_id": "44444444-result", "role": "toolResult", "tool_result": {"tool_call_id": "call-beta"}},
+                ],
+            },
+        ]
+        value = {
+            "action": "generate",
+            "skill": {
+                "title": "Validate a repair loop",
+                "granularity": "general",
+                "when_to_apply": "When a terminal repair needs an observed validation loop.",
+                "rules": ["Apply the repair and verify its observed result."],
+            },
+            "evidence": {
+                "rule_evidence": [
+                    {
+                        "rule_index": 0,
+                        "sources": [
+                            {"canonical_instance_id": "source-a", "step_ids": ["11111111", "22222222"]},
+                            {"canonical_instance_id": "source-beta-0002", "step_ids": ["33333333-action", "44444444-result"]},
+                        ],
+                    }
+                ]
+            },
+        }
+        checked = validate_task_extraction_with_evidence(value, traces, benchmark="terminal-bench")
+        self.assertEqual(
+            checked["evidence"]["rule_evidence"][0]["sources"],
+            [
+                {"canonical_instance_id": "source-alpha-0001", "step_ids": ["11111111-action", "22222222-result"]},
+                {"canonical_instance_id": "source-beta-0002", "step_ids": ["33333333-action", "44444444-result"]},
+            ],
+        )
+        missing_source = deepcopy(value)
+        missing_source["evidence"]["rule_evidence"][0]["sources"].pop()
+        with self.assertRaisesRegex(ValueError, "per selected instance"):
+            validate_task_extraction_with_evidence(missing_source, traces, benchmark="terminal-bench")
+        missing_result = deepcopy(value)
+        missing_result["evidence"]["rule_evidence"][0]["sources"][0]["step_ids"] = ["11111111-action"]
+        with self.assertRaisesRegex(ValueError, "assistant action followed by"):
+            validate_task_extraction_with_evidence(missing_result, traces, benchmark="terminal-bench")
+        reversed_steps = deepcopy(traces)
+        reversed_steps[0]["steps"].reverse()
+        with self.assertRaisesRegex(ValueError, "assistant action followed by"):
+            validate_task_extraction_with_evidence(value, reversed_steps, benchmark="terminal-bench")
+        mismatched_call = deepcopy(traces)
+        mismatched_call[0]["steps"][1]["tool_result"]["tool_call_id"] = "other-call"
+        with self.assertRaisesRegex(ValueError, "share a tool call ID"):
+            validate_task_extraction_with_evidence(value, mismatched_call, benchmark="terminal-bench")
+        with self.assertRaisesRegex(ValueError, "absent from supplied original fragments"):
+            validate_task_extraction_with_evidence(
+                value,
+                traces,
+                benchmark="terminal-bench",
+                visible_step_ids_by_source={
+                    "source-alpha-0001": ["11111111-action"],
+                    "source-beta-0002": ["33333333-action", "44444444-result"],
+                },
+            )
+
     def test_add_merge_drop_and_idempotence(self) -> None:
         bank = SkillBank.empty("terminal-bench")
         add = bank.apply(operation_id="op-add", decision="add", candidate=candidate(), source_instance_ids=["source-a"], evidence={"call": "1"})
@@ -156,6 +269,22 @@ class BankAndRuntimeTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             paper_skill_to_internal(source, benchmark="terminal-bench", expected_granularity="event")
 
+    def test_fig9_payload_converts_internal_granularity_for_candidate_and_retrieval(self) -> None:
+        candidate_internal = {**candidate("Candidate"), "skill_id": "candidate-id", "version": 1}
+        retrieved_internal = {**candidate("Retrieved"), "skill_id": "retrieved-id", "version": 2, "status": "active"}
+        messages = maintenance_messages(candidate_internal, [retrieved_internal], paper_prompt="fig9")
+        payload = json.loads(messages[1]["content"])
+        self.assertEqual(messages[0]["content"], "fig9")
+        self.assertEqual(payload["candidate_skill"]["granularity"], "event-driven")
+        self.assertEqual(payload["retrieved_skills"][0]["granularity"], "event-driven")
+        self.assertEqual(payload["retrieved_skills"][0]["skill_id"], "retrieved-id")
+        self.assertEqual(candidate_internal["granularity"], "event")
+        self.assertEqual(retrieved_internal["granularity"], "event")
+
+    def test_internal_to_paper_granularity_rejects_unknown_labels(self) -> None:
+        with self.assertRaisesRegex(ValueError, "unsupported granularity"):
+            internal_skill_to_paper({"granularity": "event-driven"})
+
     def test_pairing_cannot_select_an_unranked_or_anchorless_group(self) -> None:
         with self.assertRaises(ValueError):
             validate_pairing(
@@ -214,6 +343,37 @@ class BankAndRuntimeTest(unittest.TestCase):
         generated["evidence"]["trigger_step_ids"] = ["u"]
         with self.assertRaisesRegex(ValueError, "initial task request"):
             validate_event_extraction_with_evidence(generated, trace, benchmark="terminal-bench")
+
+    def test_event_evidence_uses_the_same_unique_prefix_resolution(self) -> None:
+        trace = {
+            "steps": [
+                {"source_entry_id": "00000000-user", "role": "user"},
+                {"source_entry_id": "11111111-trigger", "role": "toolResult"},
+                {"source_entry_id": "22222222-response", "role": "assistant"},
+                {"source_entry_id": "33333333-outcome", "role": "toolResult"},
+            ]
+        }
+        generated = {
+            "action": "generate",
+            "skill": {
+                "title": "Repair an observed local failure",
+                "granularity": "event-driven",
+                "when_to_apply": "A local tool reports a repairable failure",
+                "rules": ["Inspect the failure, repair it, and verify the result."],
+            },
+            "evidence": {
+                "trigger_step_ids": ["11111111"],
+                "response_step_ids": ["22222222"],
+                "outcome_step_ids": ["33333333"],
+                "rule_evidence": [{"rule_index": 0, "step_ids": ["11111111", "22222222", "33333333"]}],
+            },
+        }
+        checked = validate_event_extraction_with_evidence(generated, trace, benchmark="terminal-bench")
+        self.assertEqual(checked["evidence"]["trigger_step_ids"], ["11111111-trigger"])
+        self.assertEqual(
+            checked["evidence"]["source_id_expansions"]["outcome_step_ids"],
+            {"33333333": "33333333-outcome"},
+        )
 
     def test_r011_event_repair_rejects_any_skill_rewrite(self) -> None:
         trace = {
@@ -278,10 +438,68 @@ class BankAndRuntimeTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "reusable activity label"):
             validate_description(value, trace)
 
+    def test_source_id_prefixes_expand_only_when_unique_and_keep_the_mapping(self) -> None:
+        from codeskill_rebuild.pipeline import validate_description
+
+        trace = {
+            "source": {"canonical_instance_id": "task", "task_name": "terminal-bench/task"},
+            "steps": [
+                {"source_entry_id": "12345678-aaaa", "role": "assistant"},
+                {"source_entry_id": "87654321-bbbb", "role": "toolResult"},
+            ],
+        }
+        value = {
+            "task_family": "repair a local service",
+            "observed_obstacle": "The service failed its check.",
+            "attempted_procedure": "The agent inspected and repaired it.",
+            "observed_outcome": "The check passed.",
+            "source_step_ids": ["12345678", "87654321-bbbb"],
+        }
+        checked = validate_description(value, trace)
+        self.assertEqual(checked["source_step_ids"], ["12345678-aaaa", "87654321-bbbb"])
+        self.assertEqual(checked["source_step_id_expansions"], {"12345678": "12345678-aaaa"})
+        self.assertEqual(validate_description(checked, trace), checked)
+        with self.assertRaisesRegex(ValueError, "inconsistent"):
+            validate_description(
+                {**checked, "source_step_id_expansions": {"12345678": "87654321-bbbb"}},
+                trace,
+            )
+        ambiguous = deepcopy(trace)
+        ambiguous["steps"].append({"source_entry_id": "12345678-cccc", "role": "toolResult"})
+        with self.assertRaisesRegex(ValueError, "ambiguous"):
+            validate_description(value, ambiguous)
+        with self.assertRaisesRegex(ValueError, "unknown"):
+            validate_description({**value, "source_step_ids": ["missing-id"]}, trace)
+
+    def test_pairing_resolves_selected_and_evidence_prefixes_consistently(self) -> None:
+        anchor = "anchor-instance-0001"
+        other = "candidate-instance-0002"
+        value = {
+            "action": "select",
+            "selected_instance_ids": ["anchor-i", "candidate-instance-0002"],
+            "shared_subprocedure": "Inspect, repair, and verify.",
+            "instance_evidence": [
+                {"canonical_instance_id": "anchor-i", "description_evidence": "Observed repair."},
+                {"canonical_instance_id": "candidate-instance-0002", "description_evidence": "Observed repair."},
+            ],
+            "reason": "Both descriptions show the same procedure.",
+        }
+        checked = validate_pairing(value, anchor_id=anchor, candidate_ids={other}, require_shared_evidence=True)
+        self.assertEqual(checked["selected_instance_ids"], [anchor, other])
+        self.assertEqual(checked["instance_evidence"][0]["canonical_instance_id"], anchor)
+        self.assertEqual(
+            checked["source_id_expansions"],
+            {
+                "selected_instance_ids": {"anchor-i": anchor},
+                "instance_evidence": {"anchor-i": anchor},
+            },
+        )
+
     def test_maintenance_rejects_unretrieved_target_and_validates_merged_schema(self) -> None:
         with self.assertRaisesRegex(ValueError, "one retrieved skill"):
             validate_maintenance(
-                {"action": "merge", "reason": "overlap", "merge_target_skill_id": "unknown", "skill": {"granularity": "event-driven"}},
+                {"action": "merge", "reason": "overlap", "merge_target_skill_id": "unknown", "skill": {"granularity": "event-driven"},
+                 "evidence": {"source_skill_ids": ["candidate"], "source_example_ids": []}},
                 candidate=candidate(),
                 retrieved_skill_ids={"skill-known"},
             )
@@ -290,6 +508,7 @@ class BankAndRuntimeTest(unittest.TestCase):
                 "action": "merge",
                 "reason": "same local capability",
                 "merge_target_skill_id": "skill-known",
+                "evidence": {"source_skill_ids": ["candidate", "skill-known"], "source_example_ids": []},
                 "skill": {
                     "title": "Merged diagnostics",
                     "granularity": "event-driven",
@@ -301,7 +520,9 @@ class BankAndRuntimeTest(unittest.TestCase):
             retrieved_skill_ids={"skill-known"},
         )
         self.assertEqual(checked["skill"]["granularity"], "event")
-        self.assertEqual(validate_maintenance({"action": "drop", "reason": "redundant"}, candidate=candidate(), retrieved_skill_ids=set())["action"], "drop")
+        self.assertEqual(validate_maintenance({"action": "drop", "reason": "redundant",
+                                               "evidence": {"source_skill_ids": ["candidate"], "source_example_ids": []}},
+                                              candidate=candidate(), retrieved_skill_ids=set())["action"], "drop")
 
     def test_contract_version_and_snapshot_come_from_the_spec_text(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

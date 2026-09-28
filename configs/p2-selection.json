@@ -1,0 +1,18 @@
+{
+  "note": "P2 retrieval settings (docs/DECISIONS.md P2, approved 2026-09-28). A run enables them by copying p2Selection into both the sidecar retrieval config and the frozen profile (as p2_selection), and by using these task/event selection values.",
+  "p2Selection": {
+    "queryConstruction": "p2-20260928",
+    "judge": {
+      "kind": "typesafe_jev",
+      "prompt": "jev-choice-20260928",
+      "model": "jev-1.13.0",
+      "endpoint": "https://api.typesafe.ai/v1/systemone",
+      "apiKeyEnv": "TYPESAFE_API_KEY",
+      "shortlist": 3,
+      "timeoutSeconds": 30,
+      "maxAttempts": 4
+    }
+  },
+  "taskSelection": {"threshold": 0.20, "maxMatchingSkills": 1},
+  "eventSelection": {"threshold": 0.40, "maxMatchingSkills": 1}
+}

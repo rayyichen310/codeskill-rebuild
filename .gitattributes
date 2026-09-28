@@ -1,2 +1,7 @@
 # Preserve exact prompt/config bytes across Windows and Linux.
 * -text
+
+# CRLF in immutable experiment manifests is intentional, not trailing spaces.
+/configs/r015-c-only-coding.json -text whitespace=cr-at-eol
+/docs/baselines/r015-legacy-coding-baseline-20260913.json -text whitespace=cr-at-eol
+/docs/evidence/r015-c-only-* -text whitespace=cr-at-eol

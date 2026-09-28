@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from codeskill_rebuild.openclaw_compaction import (
     NativeCompactionEvidenceError,
@@ -252,6 +253,74 @@ class SqliteTranscriptCompactionDetectorTest(unittest.TestCase):
             with self.assertRaisesRegex(NativeCompactionEvidenceError, "disagrees"):
                 _normalise_location({"session_file": f"sqlite:main:s5:{direct}"})
 
+    def test_sqlite_marker_resolution_retries_transient_container_permission_denial(self) -> None:
+        from codeskill_rebuild.sqlite_compaction import _normalise_location
+
+        with tempfile.TemporaryDirectory() as tmp:
+            database_path = Path(tmp) / "openclaw-agent.sqlite"
+            resolved = database_path.absolute()
+            with patch(
+                "codeskill_rebuild.sqlite_compaction.Path.resolve",
+                side_effect=[PermissionError(13, "permission denied", str(database_path)), resolved],
+            ), patch("codeskill_rebuild.sqlite_compaction.sleep") as wait:
+                location = _normalise_location({"session_file": f"sqlite:main:s1:{database_path}"})
+            assert location is not None
+            self.assertEqual(location["database_path"], str(resolved))
+            wait.assert_called_once_with(0.1)
+
+    def test_sqlite_database_open_retries_transient_container_startup_failure(self) -> None:
+        import codeskill_rebuild.sqlite_compaction as sqlite_compaction
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            database_path = root / "openclaw-agent.sqlite"
+            append_sqlite_event(database_path, "native-1", 1, {"type": "message", "id": "user-1"})
+            detector = SqliteTranscriptCompactionDetector(
+                location_provider=lambda: sqlite_location(database_path),
+                evidence_dir=root / "evidence",
+            )
+            real_connect = sqlite_compaction.sqlite3.connect
+            call_count = 0
+
+            def connect_with_startup_race(*args, **kwargs):
+                nonlocal call_count
+                call_count += 1
+                # The official Docker bind mount can keep the database
+                # unreadable for several seconds while it changes ownership.
+                # Keep this longer than the previously observed 12-second
+                # retry window so the test protects the live race fix.
+                if call_count <= 250:
+                    raise sqlite3.OperationalError("unable to open database file")
+                return real_connect(*args, **kwargs)
+
+            with patch.object(sqlite_compaction.sqlite3, "connect", side_effect=connect_with_startup_race), patch(
+                "codeskill_rebuild.sqlite_compaction.sleep"
+            ) as wait:
+                self.assertIsNone(detector("trial-1", 0, 1, {"messages": []}))
+            self.assertEqual(call_count, 251)
+            self.assertEqual(wait.call_count, 250)
+            wait.assert_called_with(0.1)
+
+    def test_sqlite_query_retries_until_official_schema_install_finishes(self) -> None:
+        import codeskill_rebuild.sqlite_compaction as sqlite_compaction
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            database_path = root / "agents" / "main" / "agent" / "openclaw-agent.sqlite"
+            database_path.parent.mkdir(parents=True)
+            database_path.touch()
+            detector = SqliteTranscriptCompactionDetector(
+                location_provider=lambda: sqlite_location(database_path),
+                evidence_dir=root / "evidence",
+            )
+            with patch.object(sqlite_compaction, "sleep") as wait:
+                def finish_schema_install(_delay: float) -> None:
+                    append_sqlite_event(database_path, "native-1", 1, {"type": "message", "id": "user-1"})
+
+                wait.side_effect = finish_schema_install
+                self.assertIsNone(detector("trial-1", 0, 1, {"messages": []}))
+            wait.assert_called_once_with(0.1)
+
     def test_canonical_openclaw_sessions_marker_resolves_its_agent_database(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -312,6 +381,73 @@ class SqliteTranscriptCompactionDetectorTest(unittest.TestCase):
             update_sqlite_event(database_path, "native-1", 1, rewritten)
             with self.assertRaisesRegex(NativeCompactionEvidenceError, "changed after it was observed"):
                 detector("trial-1", 2, 3, {"messages": []})
+
+    def test_sqlite_compaction_sequence_relocation_preserves_identity_and_allows_new_transition(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            database_path = root / "openclaw-agent.sqlite"
+            original = compaction("compact-1")
+            append_sqlite_event(database_path, "native-1", 1, {"type": "message", "id": "user-1"})
+            append_sqlite_event(database_path, "native-1", 2, original)
+            detector = SqliteTranscriptCompactionDetector(
+                location_provider=lambda: sqlite_location(database_path),
+                evidence_dir=root / "evidence",
+            )
+            self.assertIsNone(detector("trial-1", 0, 1, {"messages": []}))
+
+            connection = sqlite3.connect(database_path)
+            try:
+                raw = connection.execute(
+                    "SELECT event_json, created_at FROM transcript_events WHERE session_id = ? AND seq = ?",
+                    ("native-1", 2),
+                ).fetchone()
+                assert raw is not None
+                connection.execute(
+                    "DELETE FROM transcript_events WHERE session_id = ? AND seq = ?",
+                    ("native-1", 2),
+                )
+                connection.execute(
+                    "INSERT INTO transcript_events (session_id, seq, event_json, created_at) VALUES (?, ?, ?, ?)",
+                    ("native-1", 5, raw[0], raw[1]),
+                )
+                connection.commit()
+            finally:
+                connection.close()
+
+            self.assertIsNone(detector("trial-1", 1, 2, {"messages": []}))
+            state = read_json(root / "evidence" / "native_compaction" / "detector-state.json")
+            tracked = next(iter(state["tracked_sessions"].values()))
+            self.assertEqual(tracked["seen_by_seq"], {"5": tracked["seen"]["compact-1"]})
+            self.assertEqual(tracked["seq_relocations"][0]["from_seq"], 2)
+            self.assertEqual(tracked["seq_relocations"][0]["to_seq"], 5)
+
+            append_sqlite_event(database_path, "native-1", 6, compaction("compact-2"))
+            evidence = detector("trial-1", 2, 3, {"messages": []})
+            assert evidence is not None
+            self.assertEqual(evidence["compaction_id"], "compact-2")
+            self.assertEqual(evidence["entry"]["seq"], 6)
+
+    def test_sqlite_compaction_sequence_disappearance_without_identity_replacement_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            database_path = root / "openclaw-agent.sqlite"
+            append_sqlite_event(database_path, "native-1", 1, compaction("compact-1"))
+            detector = SqliteTranscriptCompactionDetector(
+                location_provider=lambda: sqlite_location(database_path),
+                evidence_dir=root / "evidence",
+            )
+            self.assertIsNone(detector("trial-1", 0, 1, {"messages": []}))
+            connection = sqlite3.connect(database_path)
+            try:
+                connection.execute(
+                    "DELETE FROM transcript_events WHERE session_id = ? AND seq = ?",
+                    ("native-1", 1),
+                )
+                connection.commit()
+            finally:
+                connection.close()
+            with self.assertRaisesRegex(NativeCompactionEvidenceError, "disappeared after it was observed"):
+                detector("trial-1", 1, 2, {"messages": []})
 
     def test_malformed_sqlite_marker_or_event_fails_closed(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

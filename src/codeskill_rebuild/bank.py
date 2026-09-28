@@ -6,6 +6,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Iterable
 
+from .code_examples import CodeExampleError, validate_materialized_code_examples
 from .types import canonical_instance_id, canonical_json, read_json, sha256_text, utc_now, write_json
 
 
@@ -30,6 +31,11 @@ def _validate_candidate(candidate: dict[str, Any]) -> None:
         raise BankError("rules must be a nonempty list of nonempty strings")
     if not isinstance(candidate["benchmark"], str) or not candidate["benchmark"].strip():
         raise BankError("benchmark must be nonempty")
+    if "code_examples" in candidate:
+        try:
+            validate_materialized_code_examples(candidate["code_examples"])
+        except CodeExampleError as error:
+            raise BankError(f"invalid code_examples: {error}") from error
 
 
 def validate_skill_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
@@ -219,13 +225,60 @@ class SkillBank:
         return deepcopy(operation)
 
     def eligible(self, *, instance_id: str, granularity: str, frozen_sequence: int | None = None) -> list[dict[str, Any]]:
+        return self.eligibility_report(
+            instance_id=instance_id,
+            granularity=granularity,
+            frozen_sequence=frozen_sequence,
+        )["eligible_skills"]
+
+    def eligibility_report(
+        self,
+        *,
+        instance_id: str,
+        granularity: str,
+        frozen_sequence: int | None = None,
+    ) -> dict[str, Any]:
+        """Return eligible skills plus explicit pre-scoring exclusion evidence."""
         state = self.snapshot(self.sequence if frozen_sequence is None else frozen_sequence)
         canonical_id = canonical_instance_id(instance_id)
         selected: list[dict[str, Any]] = []
+        candidates: list[dict[str, Any]] = []
         for skill in state["skills"]:
-            if skill.get("status") != "active" or skill.get("granularity") != granularity:
-                continue
-            if canonical_id in _source_instances(skill):
-                continue
-            selected.append(deepcopy(skill))
-        return selected
+            reasons: list[str] = []
+            is_active = skill.get("status") == "active"
+            granularity_matches = skill.get("granularity") == granularity
+            if not is_active:
+                reasons.append("status_not_active")
+            if not granularity_matches:
+                reasons.append("granularity_mismatch")
+            evaluated_sources: list[str] | None = None
+            if is_active and granularity_matches:
+                # Preserve eligible()'s historical short-circuit behavior:
+                # unrelated inactive/granularity records never need source
+                # parsing to decide this phase's selection.
+                evaluated_sources = sorted(_source_instances(skill))
+                if canonical_id in evaluated_sources:
+                    reasons.append("same_instance_provenance")
+            candidates.append(
+                {
+                    "skill_id": skill.get("skill_id"),
+                    "version": skill.get("version"),
+                    "title": skill.get("title"),
+                    "status": skill.get("status"),
+                    "granularity": skill.get("granularity"),
+                    "provenance": deepcopy(skill.get("provenance")),
+                    "evaluated_source_instance_ids": evaluated_sources,
+                    "eligible": not reasons,
+                    "exclusion_reasons": reasons,
+                }
+            )
+            if not reasons:
+                selected.append(deepcopy(skill))
+        return {
+            "instance_id": canonical_id,
+            "granularity": granularity,
+            "frozen_sequence": state["sequence"],
+            "state_sha256": state["state_sha256"],
+            "eligible_skills": selected,
+            "candidates": candidates,
+        }

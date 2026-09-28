@@ -106,9 +106,12 @@ def _validate_openclaw_binding(config: dict[str, Any]) -> None:
     providers = _mapping(_mapping(openclaw.get("models"), field="OpenClaw config.models").get("providers"), field="OpenClaw config.models.providers")
     provider = _mapping(providers.get(provider_id), field=f"OpenClaw provider {provider_id}")
     listen = _mapping(config["listen"], field="listen")
-    expected_base_url = f"http://{listen['host']}:{listen['port']}/v1"
+    advertised_host = listen.get("advertisedHost", listen["host"])
+    if not isinstance(advertised_host, str) or not advertised_host.strip():
+        raise ValueError("listen.advertisedHost must be a nonempty string when configured")
+    expected_base_url = f"http://{advertised_host}:{listen['port']}/v1"
     if provider.get("baseUrl") != expected_base_url:
-        raise ValueError("OpenClaw provider baseUrl must bind exactly to this sidecar listener")
+        raise ValueError("OpenClaw provider baseUrl must bind exactly to this sidecar listener advertisedHost")
     models = provider.get("models")
     if not isinstance(models, list) or not any(isinstance(item, dict) and item.get("id") == model_id for item in models):
         raise ValueError("OpenClaw provider must declare openclaw.modelId")
@@ -136,6 +139,8 @@ def load_config(path: Path) -> dict[str, Any]:
     _positive_int(upstream.get("timeoutSeconds"), field="upstream.timeoutSeconds")
     listen = _mapping(config.get("listen"), field="listen")
     _text(listen.get("host"), field="listen.host")
+    if "advertisedHost" in listen:
+        _text(listen.get("advertisedHost"), field="listen.advertisedHost")
     port = listen.get("port")
     if isinstance(port, bool) or not isinstance(port, int) or port < 1 or port > 65535:
         raise ValueError("listen.port must be an integer from 1 through 65535")

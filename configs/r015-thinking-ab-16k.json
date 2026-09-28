@@ -1,0 +1,12 @@
+{
+  "kind": "r015_thinking_ab_manager_profile",
+  "output_budget_profile": "r015_thinking_ab_16k",
+  "model": "deepseek-ai/DeepSeek-V4-Flash",
+  "manager_context_tokens": 270000,
+  "max_output_tokens": 16384,
+  "safety_tokens": 4096,
+  "temperature": 0.0,
+  "reasoning_effort": "max",
+  "timeout_seconds": 300,
+  "summary_segment_max_tokens": 65536
+}

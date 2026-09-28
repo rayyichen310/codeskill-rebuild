@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "kind": "r012_execution_profile",
+  "profile_id": "m3-r015-development-luna-max-v1",
+  "event_selection": {
+    "profile_ref": "m3-development-event-minilm-v1",
+    "selection_rule_ref": "r013-event-cosine-top1-threshold-0.50",
+    "max_matching_skills": 1,
+    "skill_token_budget": 25000
+  },
+  "sidecar_injection": {
+    "event_skill_token_budget_scope": "complete_payload_active_event_blocks_delta",
+    "arms": {
+      "A": {
+        "enable_task": false,
+        "enable_event": false
+      },
+      "B": {
+        "enable_task": true,
+        "enable_event": true
+      },
+      "C": {
+        "enable_task": true,
+        "enable_event": true
+      }
+    },
+    "task_selection": {
+      "threshold": 0.45,
+      "max_matching_skills": 2,
+      "selection_rule_ref": "r013-task-cosine-top2-threshold-0.45"
+    },
+    "event_selection": {
+      "threshold": 0.50
+    }
+  },
+  "evolution": {
+    "full_lifecycle_arms": [
+      "C"
+    ],
+    "explicit_selection_manifest_required": true,
+    "candidate_selection_mode": "all_actually_supplied"
+  },
+  "development": {
+    "instances": [
+      "terminal-bench/password-recovery",
+      "terminal-bench/portfolio-optimization"
+    ],
+    "arm_order": [
+      "A",
+      "B",
+      "C"
+    ],
+    "repeat_id": "development",
+    "release_order": [
+      "A",
+      "B",
+      "C"
+    ],
+    "same_instance_freeze_before_trials": true,
+    "later_instance_only_after_release": true,
+    "candidate_publication": "one_atomic_next_instance_bank_transaction"
+  },
+  "runtime": {
+    "official_harbor_version": "0.16.1",
+    "official_openclaw_package": "openclaw@2026.9.3",
+    "official_tb21_commit": "7131e4375048a0e408a8fb404b5f499d726b695b",
+    "official_solver_model_context_tokens": 270000,
+    "proxy_max_input_tokens": 250000,
+    "proxy_max_output_tokens": 16384,
+    "proxy_max_forwarded_requests": 24,
+    "build_timeout_seconds": 600,
+    "agent_timeout_seconds": 900,
+    "verifier_timeout_seconds": 900,
+    "outer_timeout_seconds": 2700,
+    "upstream_timeout_seconds": 900,
+    "harbor_concurrency": 1,
+    "retry_count": 0,
+    "minilm_repo_id": "sentence-transformers/all-MiniLM-L6-v2",
+    "minilm_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+  }
+}

@@ -1,45 +1,14 @@
-import { appendFileSync, chmodSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { randomUUID } from "node:crypto";
+import { appendFileSync, chmodSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { writeLifecycleRecord } from "./lifecycle-record.js";
 
 function audit(pluginConfig, kind, value) {
   const auditPath = typeof pluginConfig?.auditPath === "string" ? pluginConfig.auditPath : undefined;
   if (!auditPath) return;
   mkdirSync(dirname(auditPath), { recursive: true });
   appendFileSync(auditPath, `${JSON.stringify({ time_ms: Date.now(), kind, ...value })}\n`, "utf8");
-}
-
-function writeLifecycleRecord(pluginConfig, sessionId, kind, filenamePrefix) {
-  const permitDirectory =
-    typeof pluginConfig?.permitDirectory === "string" ? pluginConfig.permitDirectory : undefined;
-  const trialId = typeof pluginConfig?.trialId === "string" ? pluginConfig.trialId : undefined;
-  const expectedSessionId = typeof pluginConfig?.sessionId === "string" ? pluginConfig.sessionId : undefined;
-  if (!permitDirectory || !trialId || !expectedSessionId) {
-    throw new Error("CODESKILL sidecar is missing required plugin configuration");
-  }
-  if (sessionId !== expectedSessionId) {
-    throw new Error("CODESKILL sidecar session does not match the isolated plugin configuration");
-  }
-  const nonce = randomUUID().replaceAll("-", "");
-  // The session identifier stays in the JSON evidence; never place it in a
-  // filesystem path supplied to the public plugin runtime.
-  const filename = `${filenamePrefix}-${nonce}.json`;
-  const target = join(permitDirectory, filename);
-  const temporary = join(permitDirectory, `.${filename}.tmp`);
-  const permit = {
-    schema_version: 1,
-    kind,
-    trial_id: trialId,
-    session_id: sessionId,
-    issued_at_unix_ms: Date.now(),
-    nonce,
-  };
-  mkdirSync(permitDirectory, { recursive: true, mode: 0o700 });
-  writeFileSync(temporary, JSON.stringify(permit), { encoding: "utf8", mode: 0o600 });
-  chmodSync(temporary, 0o600);
-  renameSync(temporary, target);
-  return { filename, nonce };
+  chmodSync(auditPath, 0o640);
 }
 
 function writeNativeSummaryPermit(pluginConfig, sessionId) {

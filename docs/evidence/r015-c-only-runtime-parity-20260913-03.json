@@ -1,0 +1,333 @@
+{
+  "schema_version": 1,
+  "kind": "r015_c_only_runtime_parity_audit",
+  "audit_id": "r015-c-only-runtime-parity-20260913-03",
+  "created_at_utc": "2026-09-13T16:06:03.180364Z",
+  "scope": "preparation-only parity investigation; no formal C-only trial, Harbor solver, verifier, or model evaluation started",
+  "historical_baseline": {
+    "manifest": {
+      "path": "docs/baselines/r015-legacy-coding-baseline-20260913.json",
+      "sha256": "4b2daf171149dc50868179ee5afe86def06949fd33e04934eef12859b5c97170",
+      "size_bytes": 108912
+    },
+    "root_config": {
+      "path": "<OPENCLAW_ROOT>/docs/plan/summary-spine/terminal-bench-results/raw/dsv4-v1d-core12-paired-r1-20260904-baseline/2026-09-04__16-21-13/config.json",
+      "sha256": "19b8286a8af9b99c1f526afde3fea38147a589db198e468736cf09edb2b1a096"
+    },
+    "trial_config": {
+      "path": "<OPENCLAW_ROOT>/docs/plan/summary-spine/terminal-bench-results/raw/dsv4-v1d-core12-paired-r1-20260904-baseline/2026-09-04__15-38-16/build-pmars__pMuKTqk/config.json",
+      "sha256": "8d1c3de2621c74cca5e9b8266e92ecce0247a8cd79919e7e0ef9ce0d68abcdd4"
+    },
+    "trial_result": {
+      "path": "<OPENCLAW_ROOT>/docs/plan/summary-spine/terminal-bench-results/raw/dsv4-v1d-core12-paired-r1-20260904-baseline/2026-09-04__15-38-16/build-pmars__pMuKTqk/result.json",
+      "sha256": "dce78817e3713f6e88dbb5e219fc1331fa80a5fd14acba1fb3b24d13d3729a54"
+    },
+    "harbor_version": "0.17.1",
+    "openclaw_version": "2026.7.2",
+    "openclaw_source_git_revision": "a28960df22a9b8aed5f37c393c3998b643a18a3d",
+    "openclaw_source_package_sha256": "39d9517583c69b7b33878cd4715bd4627bf7b39728b15e746e692a20e9f969b4",
+    "openclaw_source_dist_index_sha256": "c0bcb0238d50645f786cea3abb9680ad389ed772e49d55b2501776a7909a19d3",
+    "openclaw_source_lock_sha256": "96804e40f408c8d4ab0ab336302ca47ba2474e979c96a68b6085fd42b49eb386",
+    "public_adapter_ref": {
+      "path": "/home/<T2_HOST>/ray/hicache-tb21/src/harbor/src/harbor/agents/installed/openclaw.py",
+      "sha256": "56bfca795d21aba7d2d0f246f3456a3aece83b10e5aa7f5e2a8dbaabb879186e"
+    },
+    "actual_config": {
+      "model": "customendpoint/deepseek-ai/DeepSeek-V4-Flash",
+      "thinking": "high",
+      "reasoning_effort": "max",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "context_tokens": 270000,
+      "max_output_tokens": 81920,
+      "provider_timeout_seconds": 900,
+      "agent_timeout_multiplier": 4.0,
+      "setup_timeout_seconds_observed": 360,
+      "concurrency": 1,
+      "summary_spine": false,
+      "dataset_ref": "sha256:7d7bdc1cbedad549fc1140404bd4dc45e5fd0ea7c4186773687d177ad3a0699a"
+    },
+    "historical_task_identity_limitation": {
+      "task_refs_are_dataset_object_digests": true,
+      "trial_config_contains_docker_image_fields": false,
+      "root_config_contains_docker_image_fields": false,
+      "evidence_ref": {
+        "path": "docs/evidence/r015-c-only-runtime-parity-20260913-05-image-proof.txt",
+        "sha256": "6a8a0484f8600f384c6c33ec89eb8fca55b60e67106e566913327960c5b38719",
+        "size_bytes": 5995
+      },
+      "conclusion": "the historical public result records per-task dataset refs but no OCI image ID/repo digest; exact historical Docker image identity is not recoverable from the retained public configs",
+      "retained_public_result_schema": {
+        "result_path": "<OPENCLAW_ROOT>/docs/plan/summary-spine/terminal-bench-results/raw/dsv4-v1d-core12-paired-r1-20260904-baseline/2026-09-04__18-19-18/polyglot-c-py__hcMF57r/result.json",
+        "result_fields_observed": [
+          "id",
+          "task_name",
+          "trial_name",
+          "trial_uri",
+          "task_id.org",
+          "task_id.name",
+          "task_id.ref",
+          "config.task.ref",
+          "exception_info"
+        ],
+        "task_id_ref": "sha256:25570ccacf63f573a252eaa2a9c62ee8b55f5aa228cc803b5beb39dd6d8afeb7",
+        "image_fields_observed": false,
+        "search_scope": "historical public config.json, lock.json, and result.json only; no task solution or verifier source read",
+        "evidence_ref": {
+          "path": "docs/evidence/r015-c-only-historical-image-search-20260913.txt",
+          "sha256": "30094DCCEFB6441BB7D1B446E1410B5CC91F94769D24CE4AD7A73BAD7C60A9FC",
+          "size_bytes": 9036
+        }
+      }
+    },
+    "openclaw_source_runtime": {
+      "path": "<OPENCLAW_ROOT>",
+      "git_revision": "a28960df22a9b8aed5f37c393c3998b643a18a3d",
+      "package_version": "2026.7.2",
+      "node_path": "/home/<T2_HOST>/.linuxbrew/Cellar/node@22/22.23.1/bin/node",
+      "node_version": "v22.23.1",
+      "version_command": "node openclaw.mjs --version",
+      "version_output": "OpenClaw 2026.7.2 (a28960d)",
+      "source_tree_status": "clean at probe time",
+      "public_source_only": true,
+      "evidence": [
+        {
+          "path": "docs/evidence/r015-c-only-runtime-parity-20260913-15-node-runtime.txt",
+          "sha256": "92d4d50a18c5a86e645d3f640efda83661f605c862d76f3704cc3f346fb4417c",
+          "size_bytes": 141
+        },
+        {
+          "path": "docs/evidence/r015-c-only-runtime-parity-20260913-24-old-cli-config-validate.txt",
+          "sha256": "073b5667134d3a28b36721f7f36453e31880873efe6e700dbf2c1f217abe1d6a",
+          "size_bytes": 599
+        }
+      ]
+    }
+  },
+  "prepared_target": {
+    "harbor_version": "0.17.1",
+    "harbor_binary": "/home/<T2_HOST>/anaconda3/envs/terminal-bench2/bin/harbor",
+    "openclaw_package": "openclaw@2026.9.3",
+    "openclaw_package_engine": ">=24.16.0 <25 || >=26.1.0",
+    "node_runtime": "24.16.0 (exposed through inherited public nvm alias 22)",
+    "tb21_checkout_commit": "7131e4375048a0e408a8fb404b5f499d726b695b",
+    "adapter_source": "codeskill_rebuild.harbor_openclaw_adapter:CODESKILLHarborOpenClaw",
+    "public_plugin_only": true,
+    "source_mount": false,
+    "agent_uid": 1000,
+    "agent_home": "/home/codeskill",
+    "workspace": "/app",
+    "parameters": {
+      "thinking": "high",
+      "reasoning_effort": "max",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "context_tokens": 270000,
+      "max_output_tokens": 81920,
+      "provider_timeout_seconds": 900
+    },
+    "task_artifact_audit": {
+      "path": "docs/evidence/r015-c-only-public-task-audit-20260913-24.json",
+      "sha256": "d006249a7681273875d44633b21c9505ec59511e623d50246ed50b93b3b860c9",
+      "size_bytes": 34032
+    },
+    "gpu_readiness_audit": {
+      "path": "docs/evidence/r015-c-only-<MODEL_SERVICE_HOST>-job-501-20260913-final-readonly.json",
+      "sha256": "9bb02354e5d10dba8c6a2d160a1d32e3ca3261145ad9bff1a087291bf98d28e6",
+      "size_bytes": 2413
+    },
+    "openclaw_package_registry_status": "published_and_resolved_for_prepared_target",
+    "public_plugin_probe": {
+      "status": "loaded_under_historical_openclaw_source",
+      "plugin_id": "codeskill-r012-sidecar",
+      "provider_id": "codeskill-r012",
+      "config_validate": "passed",
+      "normal_model_wire": "not_run_in_this_probe",
+      "evidence": [
+        {
+          "path": "docs/evidence/r015-c-only-runtime-parity-20260913-23-old-cli-plugin-list.txt",
+          "sha256": "f5c56c2b1cc4606c31d03f671f7ce807d5e08a960f67aee9c31e9d4ecba5b0d3",
+          "size_bytes": 307939
+        },
+        {
+          "path": "docs/evidence/r015-c-only-runtime-parity-20260913-24-old-cli-config-validate.txt",
+          "sha256": "073b5667134d3a28b36721f7f36453e31880873efe6e700dbf2c1f217abe1d6a",
+          "size_bytes": 599
+        }
+      ]
+    },
+    "task_timeout_comparison": {
+      "path": "docs/evidence/r015-c-only-task-limits-comparison-20260914.json",
+      "sha256": "e151b1847a9b9f3fcb65f32e2b37193ac0dd673745e1150b4000bfc08351394c",
+      "size_bytes": 42437
+    }
+  },
+  "public_interface_compatibility": {
+    "old_harbor_import_and_bind": "passed",
+    "current_harbor_import": "passed",
+    "official_openclaw_adapter_bytes_equal_old_current": true,
+    "probe_evidence": [
+      {
+        "path": "docs/evidence/r015-c-only-runtime-parity-20260913-04-interface.txt",
+        "sha256": "00d8a47370a26eb151490deae698b470d06a9b8e8ea6163c64841baefe2fbdf0",
+        "size_bytes": 2816
+      },
+      {
+        "path": "docs/evidence/r015-c-only-runtime-parity-20260913-07-old-public-methods.txt",
+        "sha256": "b9f82f0fae36cad766266d0e9fb29ea8b4999c77f6415e930d63f0ad59319408",
+        "size_bytes": 343
+      },
+      {
+        "path": "docs/evidence/r015-c-only-runtime-parity-20260913-08-current-public-methods.txt",
+        "sha256": "f26d22d60eb27b2eb920db43687931a63c76352cf49e91a910f705015092aedd",
+        "size_bytes": 343
+      },
+      {
+        "path": "docs/evidence/r015-c-only-runtime-parity-20260913-09-public-signatures.txt",
+        "sha256": "1e1fd1658b9996e3878b86c54213078b1a1ab73a66eaf0bdedb04d2a90cf0e2e",
+        "size_bytes": 678
+      },
+      {
+        "path": "docs/evidence/r015-c-only-runtime-parity-20260913-10-adapter-compare.txt",
+        "sha256": "8ca1256987abfbad5d9f7fc2debeccbc77ce64c9d321e0bcb9a7aaac2950f8d0",
+        "size_bytes": 394
+      }
+    ],
+    "result": "unchanged public OpenClaw adapter API and CODESKILL public config binding work under Harbor 0.17.1; the clean historical OpenClaw source also loads the CODESKILL public plugin and validates the prepared public config; no Harbor downgrade is required for the prepared target",
+    "historical_openclaw_public_source_plugin_load": "passed"
+  },
+  "unresolved_differences": [
+    {
+      "difference": "The historical OpenClaw 2026.7.2 release is available as a clean source checkout but not as an npm registry version; the unchanged official Harbor installer resolves npm packages",
+      "evidence": {
+        "path": "docs/evidence/r015-c-only-runtime-parity-20260913-18-old-adapter-install.txt",
+        "sha256": "434e0c0d0f439e3d30573887cfe449abd1fcdeea70624ab9924109c61142a612",
+        "size_bytes": 2964
+      },
+      "supporting_evidence": [
+        {
+          "path": "docs/evidence/r015-c-only-runtime-parity-20260913-15-node-runtime.txt",
+          "sha256": "92d4d50a18c5a86e645d3f640efda83661f605c862d76f3704cc3f346fb4417c",
+          "size_bytes": 141
+        },
+        {
+          "path": "docs/evidence/r015-c-only-runtime-parity-20260913-24-old-cli-config-validate.txt",
+          "sha256": "073b5667134d3a28b36721f7f36453e31880873efe6e700dbf2c1f217abe1d6a",
+          "size_bytes": 599
+        }
+      ],
+      "minimum_reason": "npm view openclaw@2026.7.2 returned E404, while Harbor 0.17.1 official install constructs npm install -g openclaw@<version>; loading the source checkout directly would require a new transport/source mount outside the approved public package path",
+      "forbidden_substitutes": [
+        "read-only OpenClaw source mount",
+        "source fork or dist patch",
+        "monkeypatch"
+      ]
+    },
+    {
+      "difference": "historical Docker image IDs/repo digests are absent from retained public baseline configs",
+      "evidence": {
+        "path": "docs/evidence/r015-c-only-runtime-parity-20260913-05-image-proof.txt",
+        "sha256": "6a8a0484f8600f384c6c33ec89eb8fca55b60e67106e566913327960c5b38719",
+        "size_bytes": 5995
+      },
+      "minimum_reason": "only dataset task refs are present; current public audit can pin current image IDs but cannot prove equality to historical runtime images; per-task prepared effective limits are separately computed from public task.toml and JobConfig multipliers"
+    },
+    {
+      "difference": "historical solver exposed customendpoint directly; prepared solver sees a per-trial public CODESKILL sidecar",
+      "evidence": {
+        "path": "docs/evidence/r015-c-only-runtime-parity-20260913-04-interface.txt",
+        "sha256": "00d8a47370a26eb151490deae698b470d06a9b8e8ea6163c64841baefe2fbdf0",
+        "size_bytes": 2816
+      },
+      "minimum_reason": "sidecar is required for C-only retrieval/evidence hooks and does not leak upstream credentials into the task",
+      "supporting_evidence": [
+        {
+          "path": "docs/evidence/r015-c-only-task-limits-comparison-20260914.json",
+          "sha256": "e151b1847a9b9f3fcb65f32e2b37193ac0dd673745e1150b4000bfc08351394c",
+          "size_bytes": 42437
+        }
+      ]
+    },
+    {
+      "difference": "historical OpenClaw runtime used host-mounted source and recorded Node 22.23.2; prepared package uses Node 24.16.0 with public adapter alias",
+      "evidence": {
+        "path": "docs/evidence/r015-c-only-runtime-parity-20260913-03-remote-recheck.txt",
+        "sha256": "82e3ab8be97af6241e92ff3333793d87101d7d75967ed47877ad11ac86d49b47",
+        "size_bytes": 611
+      },
+      "supporting_evidence": [
+        {
+          "path": "docs/evidence/r015-c-only-runtime-parity-20260913-15-node-runtime.txt",
+          "sha256": "92d4d50a18c5a86e645d3f640efda83661f605c862d76f3704cc3f346fb4417c",
+          "size_bytes": 141
+        }
+      ],
+      "minimum_reason": "prepared npm package engine requires Node >=24.16.0 and the approved prepared target does not mount the historical source tree"
+    },
+    {
+      "difference": "agent UID/home setup differs from historical task container defaults",
+      "evidence": {
+        "path": "docs/evidence/r015-c-only-runtime-parity-20260913-03-remote-recheck.txt",
+        "sha256": "82e3ab8be97af6241e92ff3333793d87101d7d75967ed47877ad11ac86d49b47",
+        "size_bytes": 611
+      },
+      "minimum_reason": "public plugin state/permit files require a consistent ephemeral UID-1000 binding; this is recorded per launch"
+    }
+  ],
+  "gate": {
+    "status": "blocked_requires_user_decision",
+    "reason": "A clean public OpenClaw 2026.7.2 source checkout is executable with the exact Node 22.23.1 runtime and loads/validates the CODESKILL public plugin, but Harbor 0.17.1 official install cannot obtain that release from npm; historical task image identity is also absent from retained public configs. Formal start must not silently select a substitute.",
+    "decision_options": [
+      "authorize an immutable public-interface installation transport for the clean historical OpenClaw 2026.7.2 source checkout and provide or recover the historical public task image identities; source mounts, forks, dist patches, and monkeypatches remain forbidden",
+      "explicitly approve the prepared Harbor 0.17.1/OpenClaw 2026.9.3 public-package target and the unproven historical task-image identity, recording that deviation before formal start"
+    ],
+    "formal_start_must_refuse_until_option_recorded": true
+  },
+  "raw_evidence_refs": {
+    "remote_recheck": {
+      "path": "docs/evidence/r015-c-only-runtime-parity-20260913-03-remote-recheck.txt",
+      "sha256": "82e3ab8be97af6241e92ff3333793d87101d7d75967ed47877ad11ac86d49b47",
+      "size_bytes": 611
+    },
+    "public_task_fields": {
+      "path": "docs/evidence/r015-c-only-runtime-parity-20260913-03-public-task-fields.txt",
+      "sha256": "efab1253b3769f7b5e9a2eff285076aaffe437387597fd6bf889315b59214000",
+      "size_bytes": 1286
+    },
+    "config_hashes": {
+      "path": "docs/evidence/r015-c-only-runtime-parity-20260913-06-config-hashes.txt",
+      "sha256": "5cda6b93e9e5eb918865933a36a528f038b7c62d4d237d85c0840e392ec3f666",
+      "size_bytes": 1334
+    },
+    "historical_node_runtime": {
+      "path": "docs/evidence/r015-c-only-runtime-parity-20260913-15-node-runtime.txt",
+      "sha256": "92d4d50a18c5a86e645d3f640efda83661f605c862d76f3704cc3f346fb4417c",
+      "size_bytes": 141
+    },
+    "historical_cli_plugin_load": {
+      "path": "docs/evidence/r015-c-only-runtime-parity-20260913-23-old-cli-plugin-list.txt",
+      "sha256": "f5c56c2b1cc4606c31d03f671f7ce807d5e08a960f67aee9c31e9d4ecba5b0d3",
+      "size_bytes": 307939
+    },
+    "historical_cli_config_validate": {
+      "path": "docs/evidence/r015-c-only-runtime-parity-20260913-24-old-cli-config-validate.txt",
+      "sha256": "073b5667134d3a28b36721f7f36453e31880873efe6e700dbf2c1f217abe1d6a",
+      "size_bytes": 599
+    },
+    "old_adapter_install_constraint": {
+      "path": "docs/evidence/r015-c-only-runtime-parity-20260913-18-old-adapter-install.txt",
+      "sha256": "434e0c0d0f439e3d30573887cfe449abd1fcdeea70624ab9924109c61142a612",
+      "size_bytes": 2964
+    },
+    "historical_image_metadata_search": {
+      "path": "docs/evidence/r015-c-only-historical-image-search-20260913.txt",
+      "sha256": "30094DCCEFB6441BB7D1B446E1410B5CC91F94769D24CE4AD7A73BAD7C60A9FC",
+      "size_bytes": 9036
+    },
+    "task_effective_timeout_comparison": {
+      "path": "docs/evidence/r015-c-only-task-limits-comparison-20260914.json",
+      "sha256": "e151b1847a9b9f3fcb65f32e2b37193ac0dd673745e1150b4000bfc08351394c",
+      "size_bytes": 42437
+    }
+  }
+}

@@ -19,8 +19,17 @@ from typing import Any, Iterable, Protocol
 
 from .arm_banks import same_granularity_top5
 from .bank import BankError, SkillBank, validate_skill_candidate
+from .code_examples import CodeExampleError, apply_code_example_changes
 from .evolution import EvolutionEvidenceError, supplied_skills_for_evolution
-from .pipeline import maintenance_messages, paper_skill_to_internal, validate_maintenance
+from .pipeline import (
+    internal_skill_to_paper,
+    maintenance_messages,
+    maintenance_from_skills_messages,
+    materialize_lifecycle_code_example,
+    paper_skill_to_internal,
+    validate_maintenance,
+    validate_maintenance_from_skills,
+)
 from .types import canonical_instance_id, canonical_json, sha256_text, utc_now, write_json
 
 
@@ -130,13 +139,25 @@ def evolution_messages(
 ) -> list[dict[str, str]]:
     if not isinstance(trajectory_evidence, dict) or not trajectory_evidence:
         raise R012ExecutionError("evolution needs nonempty trajectory evidence")
+    # Figure 8 is paper-facing just like Figure 9.  The runtime bank keeps
+    # compact internal labels (``task``/``event``), while the evolution
+    # prompt's schema uses ``general``/``event-driven``.  Convert only the
+    # nested skill objects and preserve injection evidence unchanged so the
+    # manager sees the exact supplied identities and provenance.
+    paper_supplied: list[dict[str, Any]] = []
+    for item in supplied:
+        if not isinstance(item, dict) or not isinstance(item.get("skill"), dict):
+            raise R012ExecutionError("evolution supplied evidence lacks a skill object")
+        projected = dict(item)
+        projected["skill"] = internal_skill_to_paper(item["skill"])
+        paper_supplied.append(projected)
     return [
         {"role": "system", "content": paper_prompt},
         {
             "role": "user",
             "content": canonical_json(
                 {
-                    "provided_skills": supplied,
+                    "provided_skills": paper_supplied,
                     "new_trajectory_evidence": trajectory_evidence,
                 }
             ),
@@ -152,18 +173,49 @@ def inspect_full_lifecycle_evidence(
 ) -> dict[str, Any]:
     """Validate copied trial evidence before deciding whether a manager is needed.
 
-    An empty supplied list is a factual result only when at least one durable
-    proxy attempt belongs to the trial.  It can arise from a no-skill trial or
-    a recorded infrastructure failure.  It is never inferred from a success,
-    partial failure, or missing evidence classification.  If a skill was
-    actually supplied, a normalized trajectory is mandatory and the caller
-    must ask the manager to decide evolve versus skip.
+    An empty supplied list is a factual result only when durable proxy
+    evidence belongs to the trial, or when the caller records an explicit
+    pre-request infrastructure failure with exact raw references.  It is
+    never inferred from a success, partial failure, or an unclassified empty
+    list.  If a skill was actually supplied, a normalized trajectory is
+    mandatory and the caller must ask the manager to decide evolve versus
+    skip.
     """
     if not isinstance(result_evidence, dict):
         raise R012ExecutionError(f"{trial_id}: finished trial lacks durable result evidence")
     proxy_records = result_evidence.get("proxy_attempt_records")
-    if not isinstance(proxy_records, list) or not proxy_records:
-        raise R012ExecutionError(f"{trial_id}: evolution needs at least one copied proxy attempt")
+    if not isinstance(proxy_records, list):
+        raise R012ExecutionError(f"{trial_id}: proxy_attempt_records must be a list")
+    if not proxy_records:
+        # Harbor can fail before the sidecar receives its first request (for
+        # example, an agent image setup/runtime incompatibility).  Preserve
+        # that boundary as an explicit, reviewable infrastructure result.  A
+        # missing list or an unclassified empty list must still fail closed;
+        # otherwise a caller could silently turn a partial solver run into a
+        # no-skill result and bypass Fig.8.
+        infra = result_evidence.get("infra_failure")
+        if result_evidence.get("classification") != "infra_failure" or not isinstance(infra, dict):
+            raise R012ExecutionError(f"{trial_id}: evolution needs at least one copied proxy attempt")
+        if infra.get("trial_id") != trial_id:
+            raise R012ExecutionError(f"{trial_id}: infrastructure evidence belongs to a different trial")
+        if canonical_instance_id(str(infra.get("instance_id", ""))) != canonical_instance_id(instance_id):
+            raise R012ExecutionError(f"{trial_id}: infrastructure evidence differs from its frozen instance")
+        if not isinstance(infra.get("error_type"), str) or not infra["error_type"].strip():
+            raise R012ExecutionError(f"{trial_id}: infrastructure evidence needs an error_type")
+        if not isinstance(infra.get("error"), str) or not infra["error"].strip():
+            raise R012ExecutionError(f"{trial_id}: infrastructure evidence needs the exact error")
+        if not isinstance(infra.get("raw_evidence"), dict) or not infra["raw_evidence"]:
+            raise R012ExecutionError(f"{trial_id}: infrastructure evidence needs raw evidence references")
+        trajectory = result_evidence.get("trajectory_evidence")
+        if trajectory is not None:
+            raise R012ExecutionError(f"{trial_id}: infrastructure evidence cannot claim trajectory evidence")
+        return {
+            "proxy_attempt_records": [],
+            "trajectory_evidence": None,
+            "supplied": [],
+            "classification": "infra_failure",
+            "infra_failure": deepcopy(infra),
+        }
     for index, record in enumerate(proxy_records):
         if not isinstance(record, dict) or record.get("trial_id") != trial_id:
             raise R012ExecutionError(f"{trial_id}: proxy attempt {index} belongs to a different trial")
@@ -189,7 +241,23 @@ def inspect_full_lifecycle_evidence(
     }
 
 
-def validate_evolution_output(value: dict[str, Any], *, supplied: list[dict[str, Any]]) -> dict[str, Any]:
+def validate_evolution_output(
+    value: dict[str, Any],
+    *,
+    supplied: list[dict[str, Any]],
+    trajectory_evidence: dict[str, Any] | None = None,
+    visible_step_ids_by_source: dict[str, list[str]] | None = None,
+) -> dict[str, Any]:
+    if visible_step_ids_by_source is not None and (
+        not isinstance(visible_step_ids_by_source, dict)
+        or not all(
+            isinstance(source_id, str)
+            and isinstance(step_ids, list)
+            and all(isinstance(step_id, str) for step_id in step_ids)
+            for source_id, step_ids in visible_step_ids_by_source.items()
+        )
+    ):
+        raise R012ExecutionError("evolution visible source steps must map source IDs to step-ID lists")
     by_identity: dict[tuple[str, int], dict[str, Any]] = {}
     by_id: dict[str, list[dict[str, Any]]] = {}
     for item in supplied:
@@ -222,11 +290,39 @@ def validate_evolution_output(value: dict[str, Any], *, supplied: list[dict[str,
         if base is None:
             raise R012ExecutionError("evolution may revise only an actually supplied skill")
     base_skill = base["skill"]
+    raw_evolved_skill = value.get("skill") if isinstance(value.get("skill"), dict) else {}
+    if "code_examples" in raw_evolved_skill:
+        raise R012ExecutionError("evolution must use code_example_changes instead of embedding stored evidence in skill")
     internal = paper_skill_to_internal(
-        value.get("skill") if isinstance(value.get("skill"), dict) else {},
+        raw_evolved_skill,
         benchmark=str(base_skill.get("benchmark", "")),
         expected_granularity=str(base_skill.get("granularity", "")),
     )
+    try:
+        updated_examples = apply_code_example_changes(
+            value.get("code_example_changes"),
+            base_skill.get("code_examples"),
+            materialize_added=(
+                (
+                    lambda raw: materialize_lifecycle_code_example(
+                        raw,
+                        trajectory_evidence,
+                        visible_step_ids_by_source=visible_step_ids_by_source,
+                    )
+                )
+                if isinstance(trajectory_evidence, dict)
+                else None
+            ),
+            revision_context={
+                "phase": "evolution",
+                "source_skill_id": base_skill["skill_id"],
+                "source_skill_version": base_skill["version"],
+            },
+        )
+    except (CodeExampleError, ValueError) as error:
+        raise R012ExecutionError(f"evolution code-example update is invalid: {error}") from error
+    if updated_examples:
+        internal["code_examples"] = updated_examples
     try:
         validated_skill = validate_skill_candidate(internal)
     except BankError as error:
@@ -253,11 +349,14 @@ class R012EvolutionMaintenanceExecutor:
     selections: dict[str, dict[str, Any]]
     evolution_prompt: str | None = None
     maintenance_prompt: str | None = None
+    use_visible_maintenance: bool = False
 
     def __post_init__(self) -> None:
         self.journal_root = Path(self.journal_root)
         self.profile = validate_execution_profile(self.profile)
         self.instance_id = canonical_instance_id(self.instance_id)
+        if not isinstance(self.use_visible_maintenance, bool):
+            raise R012ExecutionError("use_visible_maintenance must be a boolean")
 
     def _journal_path(self, trial_id: str, phase: str) -> Path:
         return self.journal_root / sha256_text(trial_id)[:20] / f"{phase}.json"
@@ -330,6 +429,117 @@ class R012EvolutionMaintenanceExecutor:
             raise R012ExecutionError("manager client returned an invalid result after a pre-call journal")
         return result, journal
 
+    def apply_extracted_candidate_maintenance(
+        self,
+        *,
+        trial_id: str,
+        bank: SkillBank,
+        candidate: dict[str, Any],
+        candidate_ordinal: int,
+        candidate_evidence: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Run one newly extracted candidate through the real Fig.9 path.
+
+        Arm A's shared extraction is deliberately not a maintenance decision.
+        Arm B can therefore ingest it deterministically.  Arm C, however,
+        must give every new (exact-content grouped) candidate its own Fig.9
+        add/merge/drop decision against the C bank as it exists at that point
+        in the single release transaction.  This method is separate from
+        :meth:`apply_update`: there is no Fig.8 evolution input because the
+        candidate came directly from Arm A rather than a C-supplied skill.
+        """
+        if not isinstance(candidate_ordinal, int) or candidate_ordinal <= 0:
+            raise R012ExecutionError("extracted candidate ordinal must be positive")
+        if not isinstance(candidate_evidence, dict) or not candidate_evidence:
+            raise R012ExecutionError("extracted candidate needs durable source evidence")
+        if self.encoder is None or not self.maintenance_prompt:
+            raise R012ExecutionError("extracted-candidate maintenance requires an encoder and maintenance prompt")
+        try:
+            candidate = validate_skill_candidate(candidate)
+        except BankError as error:
+            raise R012ExecutionError(f"extracted candidate violates the internal schema: {error}") from error
+        provenance = candidate.get("provenance")
+        if not isinstance(provenance, dict):
+            raise R012ExecutionError("extracted candidate needs provenance before maintenance")
+        source_ids = provenance.get("source_instance_ids")
+        if not isinstance(source_ids, list) or not source_ids or not all(isinstance(value, str) and value for value in source_ids):
+            raise R012ExecutionError("extracted candidate provenance needs source_instance_ids")
+        phase = f"extracted-candidate-maintenance-{candidate_ordinal:03d}"
+        if not isinstance(bank, SkillBank):
+            raise R012ExecutionError("extracted candidate maintenance needs its staged C bank")
+        evidence = deepcopy(candidate_evidence)
+        retrieved, retrieval = same_granularity_top5(bank, candidate, self.encoder)
+        prompt_candidate = {
+            key: candidate[key]
+            for key in ("title", "granularity", "when_to_apply", "rules", "benchmark", "code_examples")
+            if key in candidate
+        }
+        schema_sha256 = sha256_text(canonical_json(prompt_candidate))
+        maintenance_call, journal = self._call_manager(
+            trial_id=trial_id,
+            phase=phase,
+            purpose=f"r015_arm_a_candidate_maintenance:{trial_id}:{candidate_ordinal:03d}:{schema_sha256[:16]}",
+            messages=(maintenance_from_skills_messages if self.use_visible_maintenance else maintenance_messages)(
+                prompt_candidate, retrieved, paper_prompt=self.maintenance_prompt),
+            metadata={
+                "source_arm": "A",
+                "candidate_ordinal": candidate_ordinal,
+                "candidate_schema_sha256": schema_sha256,
+                "retrieval": retrieval,
+            },
+        )
+        try:
+            maintenance = (validate_maintenance_from_skills if self.use_visible_maintenance else validate_maintenance)(
+                maintenance_call["json"],
+                candidate=candidate,
+                retrieved_skill_ids={str(item["skill_id"]) for item in retrieved},
+                retrieved_skills=retrieved,
+            )
+            candidate_for_operation = deepcopy(maintenance.get("skill", candidate))
+            candidate_for_operation["provenance"] = deepcopy(provenance)
+            operation = bank.apply(
+                operation_id="r015-arm-a-candidate-" + sha256_text(
+                    canonical_json(
+                        {
+                            "trial_id": trial_id,
+                            "candidate_ordinal": candidate_ordinal,
+                            "candidate_schema_sha256": schema_sha256,
+                            "maintenance_call_id": maintenance_call["call_id"],
+                        }
+                    )
+                )[:20],
+                decision=maintenance["action"],
+                candidate=candidate_for_operation,
+                source_instance_ids=source_ids,
+                merge_target_id=maintenance.get("merge_target_skill_id"),
+                evidence={
+                    "kind": "r015_arm_a_candidate_fig9_maintenance",
+                    "source_arm": "A",
+                    "candidate_ordinal": candidate_ordinal,
+                    "candidate_evidence": evidence,
+                    "maintenance": {"call_id": maintenance_call["call_id"], "validated": deepcopy(maintenance)},
+                    "maintenance_retrieval": deepcopy(retrieval),
+                },
+            )
+        except BaseException as error:
+            self._finish_journal(
+                journal,
+                status="maintenance_output_or_bank_operation_rejected",
+                value={"call_id": maintenance_call["call_id"], "error_type": type(error).__name__, "error": str(error)},
+            )
+            raise
+        self._finish_journal(
+            journal,
+            status="maintenance_applied_to_staged_bank",
+            value={"call_id": maintenance_call["call_id"], "validated": maintenance, "operation": operation},
+        )
+        return {
+            "kind": "r015_arm_a_candidate_fig9_maintenance_applied",
+            "candidate_ordinal": candidate_ordinal,
+            "maintenance_call_id": maintenance_call["call_id"],
+            "operation": operation,
+        }
+
     def apply_update(self, trial_id: str, bank: SkillBank, assignment: dict[str, Any]) -> dict[str, Any]:
         selection = self.selections.get(trial_id)
         if selection is None:
@@ -385,7 +595,11 @@ class R012EvolutionMaintenanceExecutor:
             },
         )
         try:
-            evolved = validate_evolution_output(evolution_call["json"], supplied=supplied)
+            evolved = validate_evolution_output(
+                evolution_call["json"],
+                supplied=supplied,
+                trajectory_evidence=trajectory,
+            )
         except BaseException as error:
             self._finish_journal(
                 evolution_journal,
@@ -429,13 +643,16 @@ class R012EvolutionMaintenanceExecutor:
             raise R012ExecutionError("maintenance execution requires an encoder and maintenance prompt")
         retrieved, retrieval = same_granularity_top5(bank, candidate, self.encoder)
         candidate_for_maintenance_prompt = {
-            key: candidate[key] for key in ("title", "granularity", "when_to_apply", "rules", "benchmark")
+            key: candidate[key]
+            for key in ("title", "granularity", "when_to_apply", "rules", "benchmark", "code_examples")
+            if key in candidate
         }
         maintenance_call, maintenance_journal = self._call_manager(
             trial_id=trial_id,
             phase="maintenance",
             purpose=f"r012_evolution_maintenance:{trial_id}:{base_skill['skill_id']}:{base_skill['version']}",
-            messages=maintenance_messages(candidate_for_maintenance_prompt, retrieved, paper_prompt=self.maintenance_prompt),
+            messages=(maintenance_from_skills_messages if self.use_visible_maintenance else maintenance_messages)(
+                candidate_for_maintenance_prompt, retrieved, paper_prompt=self.maintenance_prompt),
             metadata={
                 "evolution_call_id": evolution_call["call_id"],
                 "candidate_parent_skill_id": base_skill["skill_id"],
@@ -443,10 +660,11 @@ class R012EvolutionMaintenanceExecutor:
             },
         )
         try:
-            maintenance = validate_maintenance(
+            maintenance = (validate_maintenance_from_skills if self.use_visible_maintenance else validate_maintenance)(
                 maintenance_call["json"],
                 candidate=candidate,
                 retrieved_skill_ids={str(item["skill_id"]) for item in retrieved},
+                retrieved_skills=retrieved,
             )
             candidate_for_operation = deepcopy(maintenance.get("skill", candidate))
             candidate_for_operation["provenance"] = deepcopy(candidate["provenance"])

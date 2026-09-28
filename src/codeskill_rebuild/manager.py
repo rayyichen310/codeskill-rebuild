@@ -6,7 +6,7 @@ import json
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -37,8 +37,24 @@ class ServerMessageTokenCounter:
         self.timeout_seconds = timeout_seconds
         self.last_exchange: dict[str, Any] | None = None
 
-    def __call__(self, messages: list[dict[str, Any]]) -> int:
+    def __call__(
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        request_options: Mapping[str, Any] | None = None,
+    ) -> int:
+        """Count the exact message request shape used by chat completions.
+
+        SGLang's message tokenizer applies model-specific template behavior to
+        request options such as ``reasoning_effort``.  Keeping those options
+        out of preflight can therefore produce a count that cannot be compared
+        with the chat response's ``usage.prompt_tokens``.  The manager passes
+        all non-message fields from the effective chat payload here; the
+        tokenizer-only ``add_generation_prompt`` flag remains explicit.
+        """
         payload = {"messages": messages, "add_generation_prompt": True}
+        if request_options:
+            payload.update(dict(request_options))
         request = Request(
             self.base_url + "/tokenize",
             data=json.dumps(payload).encode("utf-8"),
@@ -89,12 +105,22 @@ class ManagerProfile:
     # large sentinel value: per-call preflight, timeout, output, and journal
     # safeguards remain active.
     max_total_calls: int | None = 30
+    output_budget_profile: str = "default"
 
     def validate(self) -> None:
         if self.timeout_seconds > 300 or self.timeout_seconds <= 0:
             raise ValueError("R001 limits a manager request timeout to 300 seconds")
-        if self.max_output_tokens > 8192 or self.max_output_tokens <= 0:
-            raise ValueError("R001 limits manager output to 8192 tokens")
+        if self.output_budget_profile == "default":
+            if self.max_output_tokens > 8192 or self.max_output_tokens <= 0:
+                raise ValueError("R001 limits default manager output to 8192 tokens")
+        elif self.output_budget_profile == "r015_thinking_ab_16k":
+            if self.max_output_tokens != 16384:
+                raise ValueError("R015 thinking A/B output profile requires 16384 tokens")
+        elif self.output_budget_profile == "swe_pilot_64k":
+            if self.max_output_tokens != 65536:
+                raise ValueError("SWE pilot output profile requires 65536 tokens")
+        else:
+            raise ValueError("unknown manager output budget profile")
         if self.max_total_calls is not None and self.max_total_calls <= 0:
             raise ValueError("max_total_calls must be positive")
 
@@ -154,15 +180,37 @@ class ManagerClient:
         self.exact_token_counter = exact_token_counter
         self.call_count = len(list((self.run_dir / "model_calls").glob("call-*"))) if (self.run_dir / "model_calls").exists() else 0
 
-    def _preflight(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
+    def _preflight(
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        request_options: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
         if self.exact_token_counter is None:
             raise ContextBlocked("Exact tokenizer/template counter is required for live manager calls")
         try:
-            estimate = int(self.exact_token_counter(messages))
+            if request_options:
+                estimate = int(self.exact_token_counter(messages, request_options=request_options))
+            else:
+                estimate = int(self.exact_token_counter(messages))
         except (TokenizationError, URLError, TimeoutError, OSError) as error:
             exchange = getattr(self.exact_token_counter, "last_exchange", None)
             detail = {"state": "tokenizer_unavailable", "error": str(error), "tokenizer_exchange": exchange}
             raise ContextBlocked(json.dumps(detail)) from error
+        except TypeError as error:
+            # A custom counter that cannot receive the effective request shape
+            # cannot establish an auditable comparison.  Fail closed instead
+            # of silently reverting to a messages-only estimate.
+            if request_options:
+                exchange = getattr(self.exact_token_counter, "last_exchange", None)
+                detail = {
+                    "state": "tokenizer_incompatible_with_effective_request",
+                    "error": str(error),
+                    "request_options": dict(request_options),
+                    "tokenizer_exchange": exchange,
+                }
+                raise ContextBlocked(json.dumps(detail)) from error
+            raise
         limit = self.profile.manager_context_tokens - self.profile.max_output_tokens - self.profile.safety_tokens
         record = {
             "method": getattr(self.exact_token_counter, "method", "exact_server_or_tokenizer"),
@@ -173,6 +221,8 @@ class ManagerClient:
         exchange = getattr(self.exact_token_counter, "last_exchange", None)
         if exchange is not None:
             record["tokenizer_exchange"] = exchange
+        if request_options:
+            record["request_options"] = dict(request_options)
         if estimate > limit:
             raise ContextBlocked(json.dumps({"state": "context_blocked", **record}))
         return record
@@ -251,8 +301,17 @@ class ManagerClient:
         call_dir = self.run_dir / "model_calls" / call_id
         call_dir.mkdir(parents=True, exist_ok=False)
         self.call_count = next_call_number
+        payload: dict[str, Any] = {
+            "model": self.profile.model,
+            "messages": messages,
+            "temperature": self.profile.temperature,
+            "max_tokens": self.profile.max_output_tokens,
+            "response_format": {"type": "json_object"},
+            "reasoning_effort": self.profile.reasoning_effort,
+        }
+        request_options = {key: value for key, value in payload.items() if key != "messages"}
         try:
-            preflight = self._preflight(messages)
+            preflight = self._preflight(messages, request_options=request_options)
         except ContextBlocked as error:
             write_json(
                 call_dir / "preflight.json",
@@ -264,19 +323,12 @@ class ManagerClient:
                     "classification": "context_blocked",
                     "error": str(error),
                     "request_messages": messages,
+                    "request_options": request_options,
                     "tokenizer_exchange": getattr(self.exact_token_counter, "last_exchange", None),
                 },
             )
             raise
         self._reserve_call(call_id, purpose)
-        payload: dict[str, Any] = {
-            "model": self.profile.model,
-            "messages": messages,
-            "temperature": self.profile.temperature,
-            "max_tokens": self.profile.max_output_tokens,
-            "response_format": {"type": "json_object"},
-            "reasoning_effort": self.profile.reasoning_effort,
-        }
         request_record = {
             "kind": "live_manager_call",
             "purpose": purpose,
@@ -323,11 +375,12 @@ class ManagerClient:
             "parsed_response": parsed,
         }
         if isinstance(parsed, dict):
-            try:
-                response_record["finish_reason"] = parsed["choices"][0].get("finish_reason")
-                response_record["usage"] = parsed.get("usage")
-            except (KeyError, IndexError, TypeError):
-                response_record["classification"] = "model_output_invalid"
+            response_record["usage"] = parsed.get("usage")
+            choices = parsed.get("choices")
+            if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+                response_record["finish_reason"] = choices[0].get("finish_reason")
+            else:
+                response_record["classification"] = "model_output_malformed"
         usage = response_record.get("usage")
         observed_prompt_tokens = usage.get("prompt_tokens") if isinstance(usage, dict) else None
         expected_prompt_tokens = preflight["estimated_input_tokens"]
@@ -337,17 +390,30 @@ class ManagerClient:
             "chat_usage_prompt_tokens": observed_prompt_tokens,
             "matches": isinstance(observed_prompt_tokens, int) and observed_prompt_tokens == expected_prompt_tokens,
         }
-        if response_record.get("finish_reason") == "length":
+        finish_reason = response_record.get("finish_reason")
+        if finish_reason == "length":
             response_record["classification"] = "model_output_truncated"
         write_json(call_dir / "response.json", response_record)
         if status != 200 or not isinstance(parsed, dict):
-            response_record.setdefault("classification", "transport_or_nonjson_failure")
+            response_record["classification"] = "transport_or_nonjson_failure"
             write_json(call_dir / "response.json", response_record)
             self._finalize_call(call_id, response_record, "failed")
             raise ManagerCallError(f"{call_id}: HTTP {status}; raw response is preserved")
-        if response_record.get("finish_reason") == "length":
+        if response_record.get("classification") == "model_output_malformed" or not isinstance(finish_reason, str):
+            response_record["classification"] = "model_output_malformed"
+            write_json(call_dir / "response.json", response_record)
+            self._finalize_call(call_id, response_record, "malformed_output")
+            raise ManagerCallError(f"{call_id}: malformed manager response; raw response is preserved")
+        if finish_reason == "length":
             self._finalize_call(call_id, response_record, "truncated")
             raise ManagerCallError(f"{call_id}: model output reached length limit; preserved as truncated")
+        if finish_reason != "stop":
+            response_record["classification"] = "model_output_incomplete"
+            write_json(call_dir / "response.json", response_record)
+            self._finalize_call(call_id, response_record, "incomplete_output")
+            raise ManagerCallError(
+                f"{call_id}: manager output did not finish with stop; raw response is preserved"
+            )
         if not response_record["tokenizer_prompt_token_comparison"]["matches"]:
             response_record["classification"] = "tokenizer_prompt_count_mismatch"
             write_json(call_dir / "response.json", response_record)
@@ -356,11 +422,29 @@ class ManagerClient:
         try:
             choice = parsed["choices"][0]
             content = choice["message"]["content"]
-            action = json.loads(content)
-        except (KeyError, IndexError, TypeError, json.JSONDecodeError) as error:
-            response_record["classification"] = "model_output_invalid"
+        except (KeyError, IndexError, TypeError) as error:
+            response_record["classification"] = "model_output_malformed"
             write_json(call_dir / "response.json", response_record)
-            self._finalize_call(call_id, response_record, "invalid_output")
-            raise ManagerCallError(f"{call_id}: invalid manager JSON; raw response is preserved") from error
+            self._finalize_call(call_id, response_record, "malformed_output")
+            raise ManagerCallError(f"{call_id}: malformed manager response; raw response is preserved") from error
+        if not isinstance(content, str) or not content.strip():
+            response_record["classification"] = "model_output_empty"
+            write_json(call_dir / "response.json", response_record)
+            self._finalize_call(call_id, response_record, "empty_output")
+            raise ManagerCallError(f"{call_id}: empty manager output; raw response is preserved")
+        try:
+            action = json.loads(content)
+        except json.JSONDecodeError as error:
+            response_record["classification"] = "model_output_malformed"
+            write_json(call_dir / "response.json", response_record)
+            self._finalize_call(call_id, response_record, "malformed_output")
+            raise ManagerCallError(f"{call_id}: malformed manager JSON; raw response is preserved") from error
+        if not isinstance(action, dict):
+            response_record["classification"] = "model_output_malformed"
+            write_json(call_dir / "response.json", response_record)
+            self._finalize_call(call_id, response_record, "malformed_output")
+            raise ManagerCallError(f"{call_id}: manager JSON must be an object; raw response is preserved")
+        response_record["classification"] = "model_output_complete"
+        write_json(call_dir / "response.json", response_record)
         self._finalize_call(call_id, response_record, "succeeded")
         return {"call_id": call_id, "response": parsed, "json": action, "preflight": preflight}

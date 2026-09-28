@@ -151,6 +151,61 @@ def _tool_call_ids(message: dict[str, Any]) -> list[str]:
     return ids
 
 
+_OPENCLAW_INTERNAL_CONTEXT_START = "<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>"
+_OPENCLAW_INTERNAL_CONTEXT_END = "<<<END_OPENCLAW_INTERNAL_CONTEXT>>>"
+
+
+def _message_text(message: dict[str, Any]) -> str | None:
+    """Return text content when an OpenAI message is made only of text blocks."""
+    content = message.get("content")
+    if isinstance(content, str):
+        return content
+    if not isinstance(content, list):
+        return None
+    parts: list[str] = []
+    for item in content:
+        if not isinstance(item, dict) or item.get("type") != "text" or not isinstance(item.get("text"), str):
+            return None
+        parts.append(item["text"])
+    return "".join(parts)
+
+
+def _is_openclaw_internal_context_message(message: dict[str, Any]) -> bool:
+    """Identify the official runtime's non-user bookkeeping message.
+
+    OpenClaw appends this user-role message after a completed tool batch on
+    some requests.  It carries runtime data for the next decision and is not a
+    new user turn.  Keep the check exact so an ordinary user message which
+    merely mentions the delimiters cannot make an old batch eligible.
+    """
+    if message.get("role") != "user":
+        return False
+    text = _message_text(message)
+    if text is None:
+        return False
+    stripped = text.strip()
+    return (
+        stripped.startswith(_OPENCLAW_INTERNAL_CONTEXT_START)
+        and stripped.endswith(_OPENCLAW_INTERNAL_CONTEXT_END)
+        and stripped.count(_OPENCLAW_INTERNAL_CONTEXT_START) == 1
+        and stripped.count(_OPENCLAW_INTERNAL_CONTEXT_END) == 1
+    )
+
+
+def _internal_context_suffix(messages: list[dict[str, Any]], after_native_index: int) -> list[dict[str, Any]]:
+    """Return the official internal-context suffix after a tool batch.
+
+    An empty suffix is the ordinary request boundary.  A nonempty suffix is
+    accepted only when every following message is the exact official
+    ``INTERNAL_CONTEXT`` envelope; any real user or assistant message keeps
+    the batch historical.
+    """
+    suffix = messages[after_native_index + 1 :]
+    if suffix and all(_is_openclaw_internal_context_message(message) for message in suffix):
+        return suffix
+    return []
+
+
 def _complete_batches(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Find only fully resolved OpenAI tool-call batches in native history."""
     batches: list[dict[str, Any]] = []
@@ -519,8 +574,12 @@ class DurableOverlay:
                 continue
             # An event may only be injected at the immediate next decision.
             # A later native assistant message means this batch is historical,
-            # and a later request must not backfill an event before it.
-            if anchor["after_native_index"] != len(messages) - 1:
+            # and a later request must not backfill an event before it.  The
+            # official runtime may append one or more INTERNAL_CONTEXT user
+            # messages after the tool result; those are bookkeeping for this
+            # same decision and do not advance the conversation turn.
+            internal_context_suffix = _internal_context_suffix(messages, anchor["after_native_index"])
+            if anchor["after_native_index"] != len(messages) - 1 and not internal_context_suffix:
                 selection_record["decision"] = "historical_batch_not_at_request_boundary"
                 self._mark_processed_batch(
                     state, anchor=anchor, decision=selection_record["decision"], attempt_ordinal=attempt_ordinal
@@ -528,6 +587,12 @@ class DurableOverlay:
                 existing_anchors.add(anchor["anchor_id"])
                 selections.append(selection_record)
                 continue
+            if internal_context_suffix:
+                selection_record["native_internal_context_suffix"] = {
+                    "message_count": len(internal_context_suffix),
+                    "message_fingerprints": [_message_fingerprint(message) for message in internal_context_suffix],
+                    "boundary_kind": "official_openclaw_internal_context",
+                }
             prefix = messages[: anchor["after_native_index"] + 1]
             selected = _selection(self.event_selector(anchor, prefix) if self.event_selector else None, phase="event")
             skills = selected["skills"]

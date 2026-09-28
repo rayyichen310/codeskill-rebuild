@@ -29,7 +29,11 @@ class FakeResponse:
 class ExactCounter:
     method = "fixture_exact_counter"
 
-    def __call__(self, messages: list[dict]) -> int:
+    def __init__(self) -> None:
+        self.request_options: dict | None = None
+
+    def __call__(self, messages: list[dict], *, request_options: dict | None = None) -> int:
+        self.request_options = dict(request_options or {})
         return 10
 
 
@@ -38,9 +42,18 @@ class FixedCounter:
 
     def __init__(self, count: int) -> None:
         self.count = count
+        self.request_options: dict | None = None
+
+    def __call__(self, messages: list[dict], *, request_options: dict | None = None) -> int:
+        self.request_options = dict(request_options or {})
+        return self.count
+
+
+class MessagesOnlyCounter:
+    method = "fixture_messages_only_counter"
 
     def __call__(self, messages: list[dict]) -> int:
-        return self.count
+        return 10
 
 
 class TokenizeResponse(FakeResponse):
@@ -180,22 +193,127 @@ class ManagerTest(unittest.TestCase):
     def test_server_message_counter_preserves_the_tokenize_exchange(self) -> None:
         counter = ServerMessageTokenCounter("http://example.invalid/v1")
         with patch("codeskill_rebuild.manager.urlopen", return_value=TokenizeResponse({"count": 17})) as opened:
-            self.assertEqual(counter([{"role": "user", "content": "x"}]), 17)
+            self.assertEqual(
+                counter(
+                    [{"role": "user", "content": "x"}],
+                    request_options={
+                        "model": "deepseek-ai/DeepSeek-V4-Flash",
+                        "temperature": 0.0,
+                        "max_tokens": 8192,
+                        "response_format": {"type": "json_object"},
+                        "reasoning_effort": "max",
+                    },
+                ),
+                17,
+            )
         request = opened.call_args.args[0]
         self.assertEqual(request.full_url, "http://example.invalid/v1/tokenize")
         self.assertEqual(counter.last_exchange["count"], 17)
         self.assertTrue(counter.last_exchange["request"]["add_generation_prompt"])
+        sent = json.loads(request.data.decode("utf-8"))
+        self.assertEqual(sent["model"], "deepseek-ai/DeepSeek-V4-Flash")
+        self.assertEqual(sent["reasoning_effort"], "max")
+        self.assertEqual(sent["response_format"], {"type": "json_object"})
 
-    def test_invalid_model_json_finalizes_reservation(self) -> None:
+    def test_call_json_preflights_the_complete_effective_request_shape(self) -> None:
+        response = {
+            "choices": [{"message": {"content": '{"action":"skip"}'}, "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 10},
+        }
+        messages = [
+            {"role": "system", "content": "Return one JSON object."},
+            {"role": "user", "content": '{"task":"saved request shape"}'},
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            counter = ExactCounter()
+            client = self.client(root, counter=counter)
+            with patch("codeskill_rebuild.manager.urlopen", return_value=FakeResponse(response)):
+                result = client.call_json(purpose="event_extract", messages=messages)
+            request_record = json.loads((root / "run" / "model_calls" / "call-0001" / "request.json").read_text())
+            response_record = json.loads((root / "run" / "model_calls" / "call-0001" / "response.json").read_text())
+        expected_options = {
+            "model": "test",
+            "temperature": 0.0,
+            "max_tokens": 8192,
+            "response_format": {"type": "json_object"},
+            "reasoning_effort": "high",
+        }
+        self.assertEqual(result["json"], {"action": "skip"})
+        self.assertEqual(response_record["classification"], "model_output_complete")
+        self.assertEqual(counter.request_options, expected_options)
+        self.assertEqual(request_record["preflight"]["request_options"], expected_options)
+        self.assertEqual(request_record["request"], {"messages": messages, **expected_options})
+
+    def test_messages_only_counter_is_rejected_for_effective_request_preflight(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            client = self.client(root, counter=MessagesOnlyCounter())
+            with self.assertRaises(ContextBlocked) as raised:
+                client.call_json(purpose="event_extract", messages=[{"role": "user", "content": "x"}])
+            preflight = json.loads((root / "run" / "model_calls" / "call-0001" / "preflight.json").read_text())
+        self.assertEqual(preflight["classification"], "context_blocked")
+        self.assertIn("tokenizer_incompatible_with_effective_request", str(raised.exception))
+
+    def test_malformed_model_json_finalizes_reservation_with_distinct_classification(self) -> None:
         response = {"choices": [{"message": {"content": "not-json"}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 10}}
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             client = self.client(root, counter=ExactCounter())
             with patch("codeskill_rebuild.manager.urlopen", return_value=FakeResponse(response)):
-                with self.assertRaisesRegex(ManagerCallError, "invalid manager JSON"):
+                with self.assertRaisesRegex(ManagerCallError, "malformed manager JSON"):
                     client.call_json(purpose="event_extract", messages=[{"role": "user", "content": "x"}])
             ledger = json.loads((root / "ledger.json").read_text())
-        self.assertEqual(ledger["calls"][0]["status"], "invalid_output")
+            record = json.loads((root / "run" / "model_calls" / "call-0001" / "response.json").read_text())
+        self.assertEqual(record["classification"], "model_output_malformed")
+        self.assertEqual(record["raw_response"], json.dumps(response))
+        self.assertEqual(ledger["calls"][0]["status"], "malformed_output")
+
+    def test_empty_and_non_stop_outputs_are_not_parsed_as_success(self) -> None:
+        cases = [
+            (
+                "empty",
+                {"choices": [{"message": {"content": "  "}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 10}},
+                "model_output_empty",
+                "empty_output",
+            ),
+            (
+                "incomplete",
+                {"choices": [{"message": {"content": '{"action":"no_related_group","reason":"partial"}'}, "finish_reason": "content_filter"}], "usage": {"prompt_tokens": 10}},
+                "model_output_incomplete",
+                "incomplete_output",
+            ),
+            (
+                "malformed_shape",
+                {"choices": [], "usage": {"prompt_tokens": 10}},
+                "model_output_malformed",
+                "malformed_output",
+            ),
+            (
+                "null_choice",
+                {"choices": [None], "usage": {"prompt_tokens": 10}},
+                "model_output_malformed",
+                "malformed_output",
+            ),
+            (
+                "string_choice",
+                {"choices": ["bad"], "usage": {"prompt_tokens": 10}},
+                "model_output_malformed",
+                "malformed_output",
+            ),
+        ]
+        for name, response, classification, status in cases:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                client = self.client(root, counter=ExactCounter())
+                with patch("codeskill_rebuild.manager.urlopen", return_value=FakeResponse(response)):
+                    with self.assertRaises(ManagerCallError):
+                        client.call_json(purpose="task_pairing", messages=[{"role": "user", "content": "x"}])
+                record = json.loads((root / "run" / "model_calls" / "call-0001" / "response.json").read_text())
+                ledger = json.loads((root / "ledger.json").read_text())
+            self.assertEqual(record["classification"], classification)
+            self.assertEqual(record["raw_response"], json.dumps(response))
+            self.assertEqual(ledger["calls"][0]["status"], status)
 
     def test_prompt_token_mismatch_is_preserved_and_rejected(self) -> None:
         response = {"choices": [{"message": {"content": "{\"action\":\"skip\"}"}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 9}}

@@ -158,6 +158,52 @@ class InstanceBankFreeze:
         group["released_updates"] = deepcopy(results)
         return results
 
+    def release_instance_transaction(
+        self,
+        instance_id: str,
+        *,
+        ordered_trial_ids: Iterable[str],
+        apply_transaction: Callable[[dict[str, SkillBank], dict[str, Any]], Any],
+    ) -> Any:
+        """Publish one staged all-arm release after every assignment finishes.
+
+        This supports the development-only cross-arm action in which a
+        completed Arm A trajectory produces shared candidates for *later*
+        instances' B/C banks.  The callback never sees live banks, so no
+        same-instance trial can observe its outputs.  A failure leaves every
+        live bank unchanged and blocks automatic replay, just as a per-trial
+        manager callback does in :meth:`release_updates`.
+        """
+        canonical = canonical_instance_id(instance_id)
+        group = self.instances.get(canonical)
+        if not isinstance(group, dict):
+            raise TrialScheduleError(f"instance {canonical} was not frozen")
+        if group["release_state"] != "pending":
+            raise TrialScheduleError(
+                f"updates for instance {canonical} are {group['release_state']}; automatic replay is forbidden"
+            )
+        assignments = group["assignments"]
+        order = list(ordered_trial_ids)
+        if set(order) != set(assignments) or len(order) != len(assignments):
+            raise TrialScheduleError("ordered_trial_ids must contain every frozen trial exactly once")
+        if any(assignments[trial_id]["status"] != "finished" for trial_id in order):
+            raise TrialScheduleError("cannot release updates before every arm and repeat of the instance finishes")
+        staged_banks = {arm: SkillBank.from_dict(bank.to_dict()) for arm, bank in self.arm_banks.items()}
+        try:
+            result = apply_transaction(staged_banks, deepcopy(group))
+        except BaseException as error:
+            group["release_state"] = "blocked_after_transaction_error"
+            group["release_error"] = {"error_type": type(error).__name__, "error": str(error)}
+            raise TrialScheduleError(
+                "release transaction failed; automatic replay is forbidden"
+            ) from error
+        self.arm_banks = staged_banks
+        group["released"] = True
+        group["release_state"] = "released"
+        group["release_order"] = order
+        group["released_updates"] = deepcopy(result)
+        return deepcopy(result)
+
     def _assignment(self, trial_id: str) -> dict[str, Any]:
         for group in self.instances.values():
             assignment = group.get("assignments", {}).get(trial_id)

@@ -58,7 +58,7 @@ V05 沿用 R008 的每次試驗獨立請求代理，並依 R012 修正。Task sk
 |---|---|---|---|
 | P01 | §3.1，p.3：固定 downstream coding policy，manager 更新 bank | manager 與 solver 分開角色、記錄各自請求；solver 設定在各 arm 固定 | V01：兩個角色預設均為 DeepSeek Flash，未訓練 |
 | P02 | §3.2，p.3；附錄 D，p.13–15：自然語言 instruction skills；title、granularity、when_to_apply、rules | 兩類 skill、可讀 Markdown、結構化資料、版本及來源 sidecar | provenance 是我們加的 metadata，不混成給 solver 的規則 |
-| P03 | Fig.6，p.16：task 抽取讀 2–3 條相關軌跡，一次 generate 一個或 skip | 正常路徑嚴格使用 2–3 條；抽取讀軌跡證據，短描述僅作配對 | D02：不同題、向量候選加 DeepSeek 配對；論文未交代如何找相關軌跡 |
+| P03 | Fig.6，p.16：task 抽取讀 2–3 條相關軌跡，一次 generate 一個或 skip | 每條合格軌跡先形成隔離 SOP 候選；只從同輪較早候選配對 2–3 題；合併仍讀候選對應的原始軌跡；每條規則另以 sidecar 引用每個來源的原始 action/result | 單題候選池、D02 配對及逐規則 provenance sidecar 是本版變體；結構引用通過不代表語義概括正確 |
 | P04 | Fig.7，p.17：event 抽取讀一條完整軌跡，選最可重用的一個事件或 skip | 正常路徑保留整條軌跡；由 DeepSeek 選事件 | 論文沒有先用向量搜尋裁切軌跡的步驟；超長處理是 V02 |
 | P05 | 附錄 C，p.12：多次提示，平均每題約 1 task、3 event 候選 | 允許多次 event 抽取，保留嘗試與重複情況 | D04：最多 3 次；平均值不當產量要求，禁止強迫湊滿 |
 | P06 | §3.2／Fig.8：讀取軌跡與相關舊技能，選一個 evolve 或 skip | 以新的 skill-conditioned 軌跡證據支持修訂 | D06／R012：演化限於本次試驗確實提供過的技能；這是我們選擇的範圍，不是論文規定 |
@@ -78,11 +78,12 @@ V05 沿用 R008 的每次試驗獨立請求代理，並依 R012 修正。Task sk
 
 ```mermaid
 flowchart TD
-  A[新 baseline 軌跡與官方結果] --> B[DeepSeek 生成短描述與證據位置]
-  B --> C[MiniLM 找候選 + DeepSeek 選 2–3 條相關軌跡]
-  C --> D[DeepSeek task 抽取：讀軌跡]
+  A[新 baseline 軌跡與官方結果] --> B[DeepSeek 生成單題 SOP 候選與逐規則證據]
+  B --> C[隔離候選池：solver 不可檢索]
+  C --> D[MiniLM 排較早候選 + DeepSeek 選 2–3 題]
+  D --> O[DeepSeek 合併：讀候選與綁定原始軌跡]
   A --> E[DeepSeek event 抽取：讀一條完整軌跡]
-  D --> F[候選驗證]
+  O --> F[候選驗證]
   E --> F
   F --> G[DeepSeek 維護 add / merge / drop]
   G --> H[分 benchmark / 類型的版本化 skill bank]
@@ -106,17 +107,19 @@ flowchart TD
 - 程式提供原始 task context、逐步紀錄、可見結果；官方 hidden verifier 的測試程式與答案不提供給 manager。
 - 描述欄位：task family、observed obstacle、attempted procedure、observed outcome、原始 step IDs。成功／失敗由 verifier 紀錄提供，不能讓模型重新猜。
 - 描述中的結論必须有原始位置；未知根因保持 unknown，不把一次成功推成通用因果。
-- 只用短描述尋找候選；抽取不能以短描述替代本來應讀的 2–3 條軌跡。
+- 短描述保留作診斷與相容紀錄；正式 task 配對使用單題 SOP 候選，合併仍不能用候選摘要替代本來應讀的 2–3 條原始軌跡。
 
-### D02：Task 軌跡配對
+### D02：單題 Task SOP 候選池與配對
 
-- 在同 benchmark、允許使用的已完成來源池中，使用短描述 MiniLM 向量 cosine 找最多 12 條候選；先排除自己、相同 instance 及相同軌跡 hash。
-- DeepSeek 看候選描述，判斷是否共享可重用的多步驟程序，而不是只共享語言／repo 名稱／錯誤關鍵字。
-- 選定包含 anchor 的 2–3 條不同 instance 軌跡；不足兩條或沒有共同程序就記錄 `no_related_group`，本輪不抽 task skill。
+- 每條同輪、已完成且可供文字 manager 使用的 trace 先抽一份單題 SOP 候選；保存目標、硬限制、環境前提、主要程序、觀察結果、整題結果、限制與逐規則原始 evidence。候選可 skip，但不能因整題失敗就虛構成功。
+- 候選先進 `task_candidate_pool`，不進 active bank，也不能被 solver 檢索或注入。新題只能看同輪較早候選；恢復時沿用已落盤的候選，不重送完成 call。
+- 使用固定 MiniLM 對 SOP candidate 的 title、when-to-apply 與 rules 做 cosine 排序，最多 12 條；先排除自己、跨輪、重複或沒有精確 trajectory/candidate binding 的材料。
+- DeepSeek 看候選的條件、程序、觀察、結果、限制及 evidence 摘要，判斷是否共享可重用的多步驟程序，而不是只共享語言／repo 名稱／錯誤關鍵字。
+- 選定包含 anchor 的 2–3 個不同 instance 候選；不足兩份或沒有共同程序就記錄 `no_related_group`，本輪不發布 task skill。
 - 配對允許不同 repo 的成功與失敗材料；失敗只支持有證據的限制或警示。
-- canonical group ID 由排序後的 trajectory hashes 形成，避免同一組在各 anchor 下無限重抽。
-- 若讀原始軌跡後發現描述誤導，允許抽取 skip。保存候選排名、選擇理由、被選原始軌跡及最終操作。
-- 實驗開發期間，對照判為 `no_related_group` 的短描述與原始來源軌跡，檢查描述是否漏掉共通的多步流程。保存具體例子與步驟引用，不強迫配對。若需修改描述、配對語義或來源選擇，依 R012 先與使用者討論並確認。不得用隱藏測試答案引導配對。
+- canonical group ID 由排序後的 candidate fingerprints 形成，避免同一組在各 anchor 下無限重抽。
+- Fig.6 合併同時收到精確候選與各候選綁定的原始軌跡；若原始證據不支持候選概括，允許 skip。保存候選排名、選擇理由、candidate IDs/fingerprints、原始軌跡及最終操作。
+- 實驗開發期間，對照判為 `no_related_group` 的候選與原始來源軌跡，檢查單題 SOP 是否漏掉共通流程。保存具體例子與步驟引用，不強迫配對。若需修改候選抽取、配對語義或來源選擇，依 R012 先與使用者討論並確認。不得用隱藏測試答案引導配對。
 
 ### D03：DeepSeek 的上下文管理
 
@@ -136,6 +139,14 @@ flowchart TD
 - 每個候選另外保存 trigger step、response steps、outcome steps。抽取 JSON 的原論文字段與 provenance sidecar 分開保存。
 - 完全相同候選去重；語義重複由 maintenance 判断。空技能、無證據的候選不能為達產量而入庫。
 - 第一次出現 skip 或重複候選時即停止並記錄原因。觀察新增量、重複率與品質，評估技能庫成長。調整三次上限或停止規則前，須與使用者討論並確認。保留先前單次抽取的實驗；新實驗須標明新規則與復用的證據。
+
+### D04a: R015 evidence-bound adaptable code examples
+
+- This is a rebuild-specific first-batch extension, not a paper-prompt claim. An extraction manager may cite one observed assistant tool call and its matching later result, then author a separate multi-line Python or Bash example. The program retrieves the complete original operation and observation from immutable raw steps; model-copied source bytes are never authoritative.
+- Every example declares the exact changed or deliberately preserved fragments, applicability, prerequisites, known limitations, and unknowns. Fixed acceptance paths or literals use an explicit preserved-requirement record instead of automatic parameterization. The cited action/result must also occur together in validated rule evidence.
+- Stored raw operation, stored observation, and generated example have separate origins and hashes. Deterministic Python AST or Bash parser checks are required before bank insertion. Safe fixture behavior may be tested independently, but arbitrary source commands are not executed by this validation path.
+- Solver-visible text contains only applicability conditions, prerequisites, complete adaptable code, limitations, and unknowns. Raw operations/results, source identities and paths, hashes, diff fragments, and evidence-status fields remain internal. Later manager projections retain revision IDs, generated content, and source hashes without repeating raw source bytes. The revision ID covers the complete generated contract and lineage, not only code text. Maintenance and evolution require explicit retain/revise/remove/add decisions: a revision preserves its immutable source and appends revision provenance, while a current-trajectory addition must bind both action and result to originals visible in that exact manager call and pass deterministic syntax validation.
+- The custom R015 prompts carry this extension. Files under `prompts/paper/` remain the faithful prompt transcriptions. Historical reconciled calls retain their audited prompt bytes.
 
 ### D05：檢索、embedding 長度及注入
 

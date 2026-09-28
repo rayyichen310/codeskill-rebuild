@@ -8,6 +8,14 @@ version = "0.1.0"
 description = "Traceable CODESKILL v1 reconstruction"
 requires-python = ">=3.12"
 
+[project.optional-dependencies]
+task-graph = [
+  "langgraph==1.2.12",
+  "langgraph-checkpoint-sqlite==3.1.1",
+  "langchain-core==1.6.4",
+  "langchain-openai==1.6.5",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

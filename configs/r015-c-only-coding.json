@@ -1,0 +1,524 @@
+{
+  "schema_version": 1,
+  "kind": "r015_c_only_two_round_protocol",
+  "protocol_id": "r015-c-only-coding-two-rounds-v1",
+  "status": "prepared",
+  "baseline_manifest": {
+    "path": "docs/baselines/r015-legacy-coding-baseline-20260913.json",
+    "sha256": "4b2daf171149dc50868179ee5afe86def06949fd33e04934eef12859b5c97170",
+    "comparison_only": true,
+    "solver_input_imported": false,
+    "skills_imported": false,
+    "trajectories_imported": false
+  },
+  "tasks": [
+    {
+      "order": 1,
+      "task_name": "terminal-bench/build-pmars",
+      "canonical_instance_id": "build-pmars",
+      "task_digest": "sha256:63f0449b276f081986740c941ea9372068b310a02b062c1e5e3400f575241893",
+      "public_task_toml_sha256": "7ee2eac27b99fd462e0760552a430454db693f86608af5bb570b020270e4c9cd",
+      "public_task_toml_size_bytes": 1012,
+      "public_docker_image": "alexgshaw/build-pmars:20251031",
+      "public_docker_image_id": "sha256:57a82706f7491e0b2d1ff7e927e97ae5339892dd09c47ac43290b4ba1f5abc6f",
+      "public_docker_repo_digests": [
+        "alexgshaw/build-pmars@sha256:57a82706f7491e0b2d1ff7e927e97ae5339892dd09c47ac43290b4ba1f5abc6f"
+      ],
+      "baseline_outcome": {
+        "classification": "completed",
+        "reward": 1.0,
+        "exception_type": null,
+        "duration_seconds": 548.10566,
+        "observed_model_calls": 29
+      }
+    },
+    {
+      "order": 2,
+      "task_name": "terminal-bench/cancel-async-tasks",
+      "canonical_instance_id": "cancel-async-tasks",
+      "task_digest": "sha256:a3d048d351136e48070696cda8bb79660dfd74db1fea3b6da88559f0332699c1",
+      "public_task_toml_sha256": "14db0675e04408f2133b0067e8dbddf66a1d6e7baf6b8d38bef8ecccfc4e58a8",
+      "public_task_toml_size_bytes": 927,
+      "public_docker_image": "alexgshaw/cancel-async-tasks:20251031",
+      "public_docker_image_id": "sha256:84c7fae6b256dcc56a350790e2a9715eefc7dad662a9d8e8a472363aa71ef18d",
+      "public_docker_repo_digests": [
+        "alexgshaw/cancel-async-tasks@sha256:84c7fae6b256dcc56a350790e2a9715eefc7dad662a9d8e8a472363aa71ef18d"
+      ],
+      "baseline_outcome": {
+        "classification": "completed",
+        "reward": 1.0,
+        "exception_type": null,
+        "duration_seconds": 188.30209,
+        "observed_model_calls": 6
+      }
+    },
+    {
+      "order": 3,
+      "task_name": "terminal-bench/cobol-modernization",
+      "canonical_instance_id": "cobol-modernization",
+      "task_digest": "sha256:e03aa03965eee48c9f772d566ff9bcd741fceeac9693123f82a13fdd46be0d88",
+      "public_task_toml_sha256": "4b620211dc3d6b1b989f0210c5ecd2f606974581c8bce27bd78659d48cf0cfbd",
+      "public_task_toml_size_bytes": 882,
+      "public_docker_image": "alexgshaw/cobol-modernization:20251031",
+      "public_docker_image_id": "sha256:593ab9df3d83f771e927888b2d9436b380cdf7ec4d0af2a9f0802d541edebba0",
+      "public_docker_repo_digests": [
+        "alexgshaw/cobol-modernization@sha256:593ab9df3d83f771e927888b2d9436b380cdf7ec4d0af2a9f0802d541edebba0"
+      ],
+      "baseline_outcome": {
+        "classification": "completed",
+        "reward": 1.0,
+        "exception_type": null,
+        "duration_seconds": 566.595924,
+        "observed_model_calls": 47
+      }
+    },
+    {
+      "order": 4,
+      "task_name": "terminal-bench/code-from-image",
+      "canonical_instance_id": "code-from-image",
+      "task_digest": "sha256:ef2907bb300d9b3352410c2a75dbf831278c187c073298371870ea9c83526f78",
+      "public_task_toml_sha256": "3a13c1e252bb8759f51215be0b2b2cb1b4c697f0dd570f2d7702cc28b28f08de",
+      "public_task_toml_size_bytes": 890,
+      "public_docker_image": "alexgshaw/code-from-image:20251031",
+      "public_docker_image_id": "sha256:2be9cdb746ed18c1b2b1404032efae0b2235a1b8fc479ef17730c95409d89f76",
+      "public_docker_repo_digests": [
+        "alexgshaw/code-from-image@sha256:2be9cdb746ed18c1b2b1404032efae0b2235a1b8fc479ef17730c95409d89f76"
+      ],
+      "baseline_outcome": {
+        "classification": "completed",
+        "reward": 0.0,
+        "exception_type": null,
+        "duration_seconds": 232.895586,
+        "observed_model_calls": 6
+      }
+    },
+    {
+      "order": 5,
+      "task_name": "terminal-bench/fix-git",
+      "canonical_instance_id": "fix-git",
+      "task_digest": "sha256:16948b980df9d96de616a205f5acca1c5d395de83ff4f8ffabcafacb93226f2e",
+      "public_task_toml_sha256": "f59d711003b974e4ef8ed63556614e2ea9ea7d0e394af13b2071225e3fda7805",
+      "public_task_toml_size_bytes": 879,
+      "public_docker_image": "alexgshaw/fix-git:20260403",
+      "public_docker_image_id": "sha256:389b9c8247610c2c5be080b1ac00429007c2c69bf57f7f26c79f0f75ba2d5c74",
+      "public_docker_repo_digests": [
+        "alexgshaw/fix-git@sha256:389b9c8247610c2c5be080b1ac00429007c2c69bf57f7f26c79f0f75ba2d5c74"
+      ],
+      "baseline_outcome": {
+        "classification": "completed",
+        "reward": 1.0,
+        "exception_type": null,
+        "duration_seconds": 106.928397,
+        "observed_model_calls": 13
+      }
+    },
+    {
+      "order": 6,
+      "task_name": "terminal-bench/fix-ocaml-gc",
+      "canonical_instance_id": "fix-ocaml-gc",
+      "task_digest": "sha256:2031f3d5224b891fe443a31526b569eb756be2f88b663cb025448af9c4f97e2c",
+      "public_task_toml_sha256": "423aab8ce6f44ce9349dcde647ca3cbd09afd5ac023910c25699ed687a3c71b2",
+      "public_task_toml_size_bytes": 920,
+      "public_docker_image": "alexgshaw/fix-ocaml-gc:20251031",
+      "public_docker_image_id": "sha256:66a1e2293076c9ef27a118611b3089a6284fdf467fd4675592d0cce7d11e5b0b",
+      "public_docker_repo_digests": [
+        "alexgshaw/fix-ocaml-gc@sha256:66a1e2293076c9ef27a118611b3089a6284fdf467fd4675592d0cce7d11e5b0b"
+      ],
+      "baseline_outcome": {
+        "classification": "completed",
+        "reward": 1.0,
+        "exception_type": null,
+        "duration_seconds": 1218.775972,
+        "observed_model_calls": 50
+      }
+    },
+    {
+      "order": 7,
+      "task_name": "terminal-bench/git-leak-recovery",
+      "canonical_instance_id": "git-leak-recovery",
+      "task_digest": "sha256:22a9ec10dbd4cd8b99477b70e1944103775ca41de9b9e0025ec4898cd17bd334",
+      "public_task_toml_sha256": "d7f23fda4a6ba3fff902d2a475db8ff74feb5d328980696a77068c02c57d3044",
+      "public_task_toml_size_bytes": 937,
+      "public_docker_image": "alexgshaw/git-leak-recovery:20251031",
+      "public_docker_image_id": "sha256:62160e522a4238b8bcd522411ea97b5b200f811e5899d34947e66809bef7e586",
+      "public_docker_repo_digests": [
+        "alexgshaw/git-leak-recovery@sha256:62160e522a4238b8bcd522411ea97b5b200f811e5899d34947e66809bef7e586"
+      ],
+      "baseline_outcome": {
+        "classification": "completed",
+        "reward": 1.0,
+        "exception_type": null,
+        "duration_seconds": 112.815133,
+        "observed_model_calls": 9
+      }
+    },
+    {
+      "order": 8,
+      "task_name": "terminal-bench/headless-terminal",
+      "canonical_instance_id": "headless-terminal",
+      "task_digest": "sha256:203953871ebdae4efbf163af9499849368dab5e219b70d447e5ee9701ad382d9",
+      "public_task_toml_sha256": "abe0de1ac3adff1fbf0e22e1765efbc061a412891fd255926ed92a5ccacf69e6",
+      "public_task_toml_size_bytes": 938,
+      "public_docker_image": "alexgshaw/headless-terminal:20251031",
+      "public_docker_image_id": "sha256:eb7e209672bf6cef2785fafd9e13509b10626c327bcc2b37f5bf40ca83eaf3aa",
+      "public_docker_repo_digests": [
+        "alexgshaw/headless-terminal@sha256:eb7e209672bf6cef2785fafd9e13509b10626c327bcc2b37f5bf40ca83eaf3aa"
+      ],
+      "baseline_outcome": {
+        "classification": "completed",
+        "reward": 1.0,
+        "exception_type": null,
+        "duration_seconds": 156.208109,
+        "observed_model_calls": 7
+      }
+    },
+    {
+      "order": 9,
+      "task_name": "terminal-bench/kv-store-grpc",
+      "canonical_instance_id": "kv-store-grpc",
+      "task_digest": "sha256:973c5d4c111fb61a344457936f1c36400acd2d9e44389e7b319586fe23a7a307",
+      "public_task_toml_sha256": "6ff0f30a526bfff86a67b0b53439b9965229c0f368167dc1a5d05f34d82299a3",
+      "public_task_toml_size_bytes": 987,
+      "public_docker_image": "alexgshaw/kv-store-grpc:20251031",
+      "public_docker_image_id": "sha256:3399400800dcb207634daa42bc1b052e831e285cc9d221eea66c47bc0fc79791",
+      "public_docker_repo_digests": [
+        "alexgshaw/kv-store-grpc@sha256:3399400800dcb207634daa42bc1b052e831e285cc9d221eea66c47bc0fc79791"
+      ],
+      "baseline_outcome": {
+        "classification": "completed",
+        "reward": 0.0,
+        "exception_type": null,
+        "duration_seconds": 1896.85906,
+        "observed_model_calls": 10
+      }
+    },
+    {
+      "order": 10,
+      "task_name": "terminal-bench/polyglot-c-py",
+      "canonical_instance_id": "polyglot-c-py",
+      "task_digest": "sha256:25570ccacf63f573a252eaa2a9c62ee8b55f5aa228cc803b5beb39dd6d8afeb7",
+      "public_task_toml_sha256": "d31b9f60c47eed0d79e10d3be8fd56a23e50b3986606e3f2546863d44ac9a9ea",
+      "public_task_toml_size_bytes": 850,
+      "public_docker_image": "alexgshaw/polyglot-c-py:20251031",
+      "public_docker_image_id": "sha256:0f1c3b7816d70cf5551573fd6aeef76893f2ae3000be2419997b6871b5d987ed",
+      "public_docker_repo_digests": [
+        "alexgshaw/polyglot-c-py@sha256:0f1c3b7816d70cf5551573fd6aeef76893f2ae3000be2419997b6871b5d987ed"
+      ],
+      "baseline_outcome": {
+        "classification": "infra_failure",
+        "reward": null,
+        "exception_type": "AgentSetupTimeoutError",
+        "duration_seconds": 371.787889,
+        "observed_model_calls": 0
+      }
+    },
+    {
+      "order": 11,
+      "task_name": "terminal-bench/pypi-server",
+      "canonical_instance_id": "pypi-server",
+      "task_digest": "sha256:1a1e0542f58e2d3362fec17a9bbb98667717d9a4a3e9a4c8413d3150a4fa0ff1",
+      "public_task_toml_sha256": "07c39d7a733c89adadf74bb63a3e906c3694feb6c490d5fc85ac187c003fd447",
+      "public_task_toml_size_bytes": 888,
+      "public_docker_image": "alexgshaw/pypi-server:20251031",
+      "public_docker_image_id": "sha256:d18bb30f47c7dcaa3acdbc31ac7413c98eadca2ea16540bbd380f2f063b95276",
+      "public_docker_repo_digests": [
+        "alexgshaw/pypi-server@sha256:d18bb30f47c7dcaa3acdbc31ac7413c98eadca2ea16540bbd380f2f063b95276"
+      ],
+      "baseline_outcome": {
+        "classification": "completed",
+        "reward": 1.0,
+        "exception_type": null,
+        "duration_seconds": 257.847976,
+        "observed_model_calls": 22
+      }
+    },
+    {
+      "order": 12,
+      "task_name": "terminal-bench/schemelike-metacircular-eval",
+      "canonical_instance_id": "schemelike-metacircular-eval",
+      "task_digest": "sha256:58130c2166c3115276dc8592f358e326ff2d81ea852e3d88636c82fd1dff57e6",
+      "public_task_toml_sha256": "8dae8eb226183b0ca92331c1106152a7abc93b03b4e5a95291b86a4ddc9b44e0",
+      "public_task_toml_size_bytes": 918,
+      "public_docker_image": "alexgshaw/schemelike-metacircular-eval:20251031",
+      "public_docker_image_id": "sha256:b485be38bf80d56c1a4cd9da95bbf7ec129dc03f6786b86c0525518a96f6d1db",
+      "public_docker_repo_digests": [
+        "alexgshaw/schemelike-metacircular-eval@sha256:b485be38bf80d56c1a4cd9da95bbf7ec129dc03f6786b86c0525518a96f6d1db"
+      ],
+      "baseline_outcome": {
+        "classification": "completed",
+        "reward": 0.0,
+        "exception_type": null,
+        "duration_seconds": 865.450945,
+        "observed_model_calls": 46
+      }
+    }
+  ],
+  "protocol": {
+    "condition": "C-only",
+    "round_count": 2,
+    "rounds_sequential": true,
+    "fresh_bank_each_round": true,
+    "fresh_trajectory_pool_each_round": true,
+    "fresh_description_pool_each_round": true,
+    "one_trial_per_task_per_round": true,
+    "publish_after_each_task": true,
+    "baseline_reference_only": true,
+    "historical_skills_allowed": false,
+    "historical_trajectories_allowed": false,
+    "cross_round_material_allowed": false,
+    "formal_start_requires_user_confirmation": true,
+    "task_skill_pairing": {
+      "min_distinct_completed_tasks": 2,
+      "max_distinct_completed_tasks": 3,
+      "early_action": "skip",
+      "source": "same_round_completed_C_only_trajectories"
+    },
+    "event_extraction": {
+      "stop_on": [],
+      "repair_or_transport_retry_does_not_consume_initial_slot": true
+    },
+    "publication": {
+      "extraction_source": "current_task_complete_C_only_trajectory",
+      "maintenance_source": "skills_actually_supplied_to_current_C_trial",
+      "same_source_merge_preserves_provenance": true,
+      "same_evaluation_task_exclusion": true,
+      "atomic_before_next_task": true
+    }
+  },
+  "retrieval_profile": {
+    "schema_version": 1,
+    "kind": "r012_execution_profile",
+    "profile_id": "m3-r015-development-luna-max-v1",
+    "event_selection": {
+      "profile_ref": "m3-development-event-minilm-v1",
+      "selection_rule_ref": "r013-event-cosine-top1-threshold-0.50",
+      "max_matching_skills": 1,
+      "skill_token_budget": 25000
+    },
+    "sidecar_injection": {
+      "event_skill_token_budget_scope": "complete_payload_active_event_blocks_delta",
+      "arms": {
+        "A": {
+          "enable_task": false,
+          "enable_event": false
+        },
+        "B": {
+          "enable_task": true,
+          "enable_event": true
+        },
+        "C": {
+          "enable_task": true,
+          "enable_event": true
+        }
+      },
+      "task_selection": {
+        "threshold": 0.45,
+        "max_matching_skills": 2,
+        "selection_rule_ref": "r013-task-cosine-top2-threshold-0.45"
+      },
+      "event_selection": {
+        "threshold": 0.5
+      }
+    },
+    "evolution": {
+      "full_lifecycle_arms": [
+        "C"
+      ],
+      "explicit_selection_manifest_required": true,
+      "candidate_selection_mode": "all_actually_supplied"
+    },
+    "development": {
+      "instances": [
+        "terminal-bench/password-recovery",
+        "terminal-bench/portfolio-optimization"
+      ],
+      "arm_order": [
+        "A",
+        "B",
+        "C"
+      ],
+      "repeat_id": "development",
+      "release_order": [
+        "A",
+        "B",
+        "C"
+      ],
+      "same_instance_freeze_before_trials": true,
+      "later_instance_only_after_release": true,
+      "candidate_publication": "one_atomic_next_instance_bank_transaction"
+    },
+    "runtime": {
+      "official_harbor_version": "0.16.1",
+      "official_openclaw_package": "openclaw@2026.9.3",
+      "official_tb21_commit": "7131e4375048a0e408a8fb404b5f499d726b695b",
+      "official_solver_model_context_tokens": 270000,
+      "proxy_max_input_tokens": 250000,
+      "proxy_max_output_tokens": 16384,
+      "proxy_max_forwarded_requests": 24,
+      "build_timeout_seconds": 600,
+      "agent_timeout_seconds": 900,
+      "verifier_timeout_seconds": 900,
+      "outer_timeout_seconds": 2700,
+      "upstream_timeout_seconds": 900,
+      "harbor_concurrency": 1,
+      "retry_count": 0,
+      "minilm_repo_id": "sentence-transformers/all-MiniLM-L6-v2",
+      "minilm_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+    }
+  },
+  "driver": {
+    "kind": "official_harbor_c_only_driver",
+    "harbor_executable": "env:CODESKILL_HARBOR_BIN (or harbor on PATH)",
+    "python_executable": "current interpreter",
+    "task_root": "env:CODESKILL_TB21_TASK_ROOT (or the configured TB2.1 checkout)",
+    "plugin_path": "openclaw_plugin",
+    "sidecar_script": "scripts/run_openclaw_r012_sidecar.py",
+    "manager_ledger": "run-dir/manager-ledger.json",
+    "manager_model_config": "env:CODESKILL_MANAGER_CONFIG (optional; defaults to audited upstream endpoint)",
+    "source_policy": "official Harbor/OpenClaw public adapter; no source mount, fork, dist patch, or monkeypatch"
+  },
+  "runtime_alignment": {
+    "baseline_observed": {
+      "model_id": "deepseek-ai/DeepSeek-V4-Flash",
+      "provider_id": "customendpoint",
+      "endpoint": "http://<MODEL_SERVICE_HOST>:31000/v1",
+      "thinking": "high",
+      "reasoning_effort": "max",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "context_tokens": 270000,
+      "max_output_tokens": 81920,
+      "max_forwarded_requests": "not_configured_in_historical_manifest; observed_calls_are_not_a_cap",
+      "agent_timeout_multiplier": 4.0,
+      "agent_setup_timeout_seconds_observed": 360,
+      "agent_timeout_seconds": "not_persisted_in_historical_manifest",
+      "verifier_timeout_seconds": "not_persisted_in_historical_manifest",
+      "outer_timeout_seconds": "not_persisted_in_historical_manifest",
+      "max_turns": "not_persisted_in_historical_manifest",
+      "harbor_version": "0.17.1",
+      "openclaw_version": "2026.7.2",
+      "dataset_ref": "sha256:7d7bdc1cbedad549fc1140404bd4dc45e5fd0ea7c4186773687d177ad3a0699a",
+      "wire_evidence": {
+        "thinking_values": [
+          "high"
+        ],
+        "temperature_values": [
+          "1"
+        ],
+        "reasoning_effort_log_count": 29,
+        "response_statuses": [
+          "200"
+        ]
+      }
+    },
+    "prepared_target": {
+      "provider_id": "codeskill-r012",
+      "solver_provider_id": "codeskill-r012",
+      "solver_endpoint": "per-trial public CODESKILL sidecar",
+      "endpoint": "per-trial public CODESKILL sidecar",
+      "upstream_provider_id": "customendpoint",
+      "model_id": "deepseek-ai/DeepSeek-V4-Flash",
+      "thinking": "high",
+      "reasoning_effort": "max",
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "context_tokens": 270000,
+      "max_output_tokens": 81920,
+      "proxy_max_input_tokens": 250000,
+      "proxy_max_output_tokens": 81920,
+      "max_forwarded_requests": null,
+      "proxy_max_forwarded_requests": null,
+      "selection_condition": "C-only",
+      "selection_arm": "C",
+      "selection_profile_runtime_limits_ignored": [
+        "proxy_max_forwarded_requests",
+        "outer_timeout_seconds"
+      ],
+      "agent_timeout_multiplier": 4.0,
+      "agent_setup_timeout_multiplier": 1.0,
+      "agent_timeout_seconds": null,
+      "setup_timeout_seconds": 360,
+      "verifier_timeout_seconds": null,
+      "outer_timeout_seconds": null,
+      "provider_timeout_seconds": 900,
+      "compaction": {
+        "midTurnPrecheck": {
+          "enabled": true
+        },
+        "native_summary": "official OpenClaw public configuration; capture effective runtime before formal start"
+      },
+      "tool_environment": {
+        "launcher": "official Harbor Docker task environment",
+        "task_image": "per Terminal-Bench 2.1 task; exact image digest captured per trial",
+        "workspace": "/app",
+        "shell": "official task image default shell"
+      },
+      "max_turns": null,
+      "max_model_calls": null,
+      "retry_count": 0,
+      "harbor_concurrency": 1,
+      "harbor_version": "0.17.1",
+      "openclaw_version": "2026.9.3",
+      "tb21_commit": "7131e4375048a0e408a8fb404b5f499d726b695b",
+      "agent_uid": 1000,
+      "agent_home": "/home/codeskill",
+      "agent_workspace": "/app",
+      "minilm_repo_id": "sentence-transformers/all-MiniLM-L6-v2",
+      "minilm_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+      "wire_verification": "required before formal start; public adapter must emit the fields above"
+    },
+    "comparison_limitations": [
+      "The prepared target now uses the historical Harbor 0.17.1, while the historical OpenClaw 2026.7.2 source checkout is not published as an npm version and the public adapter target is OpenClaw 2026.9.3.",
+      "The historical task environment mounted the host OpenClaw tree read-only; the prepared adapter installs the public OpenClaw package and loads only the public CODESKILL plugin.",
+      "The historical wire exposed customendpoint directly; the prepared solver wire exposes a per-trial public sidecar and keeps the same upstream model request settings.",
+      "No historical fixed max-call or max-turn cap was found; the prepared sidecar and official task driver intentionally leave both unset so the observed 50-call task is representable.",
+      "The baseline persisted agent_timeout_multiplier=4.0 and observed a 360-second setup timeout, but it did not persist absolute agent, verifier, or outer limits. The prepared target keeps the multiplier, setup default, and provider timeout while requiring per-trial effective timeout capture before formal start.",
+      "Baseline compaction and task-image shell details are observed only where their effective artifacts record them; exact task image digests and task-derived verifier limits remain per-trial evidence fields.",
+      "A clean historical OpenClaw 2026.7.2 source checkout loads and validates the public CODESKILL plugin under Node 22.23.1, but the unchanged Harbor installer cannot install that source-only release; the parity gate records the minimum decision instead of silently substituting 2026.9.3."
+    ],
+    "parity_gate": {
+      "status": "blocked_requires_user_decision",
+      "evidence_path": "docs/evidence/r015-c-only-runtime-parity-20260913-03.json",
+      "decision_options": [
+        "authorize an immutable public-interface installation transport for the clean historical OpenClaw 2026.7.2 source checkout and provide or recover the historical public task image identities; source mounts, forks, dist patches, and monkeypatches remain forbidden",
+        "explicitly approve the prepared Harbor 0.17.1/OpenClaw 2026.9.3 public-package target and the unproven historical task-image identity, recording that deviation before formal start"
+      ],
+      "rule": "the formal runner must refuse a blocked parity gate until one option is explicitly recorded"
+    }
+  },
+  "task_artifact_audit": {
+    "path": "docs/evidence/r015-c-only-public-task-audit-20260913-24.json",
+    "sha256": "d006249a7681273875d44633b21c9505ec59511e623d50246ed50b93b3b860c9",
+    "historical_public_toml_comparison": "all configured task.toml hashes match the isolated historical public metadata tree",
+    "docker_image_identity": "all configured public image IDs were observed by Docker image inspect at audit time",
+    "hidden_material_read": false
+  },
+  "runtime_estimate": {
+    "path": "docs/evidence/r015-c-only-runtime-estimate-20260913-final.json",
+    "sha256": "4a23f0bb661d9c54b982e1066df69c26b4472f3bb0ffe01273c9ce208e597883",
+    "comparison_only": true,
+    "formal_campaign_started": false
+  },
+  "<MODEL_SERVICE_HOST>": {
+    "status": "observed",
+    "evidence_path": "docs/evidence/r015-c-only-<MODEL_SERVICE_HOST>-job-501-20260914-current-readonly.json",
+    "evidence_sha256": "64b771667952b547d32aa1f8505df73e737b9e653b8579282b49ee1bd8616577",
+    "job_id": "501",
+    "job_state": "RUNNING",
+    "time_left_seconds_at_capture": 77663,
+    "main_port": 31000,
+    "summarizer_port": 30002,
+    "capture_at_utc": "2026-09-13T17:29:34Z"
+  },
+  "formal": {
+    "status": "not_started",
+    "planned_trials": 24,
+    "task_count_per_round": 12,
+    "start_requires": [
+      "--confirm-user-start",
+      "--accept-runtime-deviation"
+    ],
+    "start_command": "python scripts/run_r015_c_only.py start --config configs/r015-c-only-coding.json --baseline-manifest docs/baselines/r015-legacy-coding-baseline-20260913.json --state runs/r015-c-only-coding/state.json --run-dir runs/r015-c-only-coding --trial-driver scripts/run_r015_c_only_harbor_driver.py --confirm-user-start --accept-runtime-deviation",
+    "resume_command": "python scripts/run_r015_c_only.py resume --config configs/r015-c-only-coding.json --baseline-manifest docs/baselines/r015-legacy-coding-baseline-20260913.json --state runs/r015-c-only-coding/state.json --run-dir runs/r015-c-only-coding --trial-driver scripts/run_r015_c_only_harbor_driver.py --confirm-user-start --accept-runtime-deviation"
+  }
+}

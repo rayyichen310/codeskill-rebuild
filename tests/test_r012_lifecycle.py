@@ -71,6 +71,49 @@ class R012LifecycleTest(unittest.TestCase):
         self.assertEqual(payload["previous_event_candidates"][0]["content"]["title"], "Inspect result")
         self.assertEqual(payload["previous_event_candidates"][0]["step_references"]["trigger_step_ids"], ["r"])
 
+    def test_evidence_only_repair_resolves_the_same_paid_initial_slot(self) -> None:
+        schedule = EventExtractionSchedule(trace())
+        first = schedule.record_initial_result(
+            {"action": "skip", "reason": "fixture would stop"}, model_call_id="call-1", evidence={}
+        )
+        # A separate schedule keeps the first initial exploration slot live.
+        schedule = EventExtractionSchedule(trace())
+        failed = schedule.record_initial_failure(
+            model_call_id="call-1",
+            error=ValueError("response must follow trigger"),
+            evidence={"original_response_path": "response.json"},
+        )
+        repaired = {
+            "action": "generate",
+            "skill": {
+                "title": "Inspect observed failure",
+                "when_to_apply": "After a command result shows an error",
+                "rules": ["Inspect the command result before retrying."],
+                "granularity": "event",
+                "benchmark": "terminal-bench",
+            },
+            "evidence": {
+                "trigger_step_ids": ["r"],
+                "response_step_ids": ["a"],
+                "outcome_step_ids": ["r"],
+                "rule_evidence": [{"rule_index": 0, "step_ids": ["a", "r"]}],
+            },
+        }
+        resolved = schedule.resolve_evidence_only_repair(
+            retry_of=failed,
+            model_call_id="call-repair",
+            repaired_result=repaired,
+            evidence={"original_skill_preserved": True},
+        )
+        self.assertEqual(resolved["initial_attempt_ordinal"], 1)
+        self.assertEqual(resolved["outcome"], "repaired_generated")
+        self.assertEqual(len(schedule.attempts), 1)
+        self.assertEqual(len(schedule.retry_records), 1)
+        self.assertEqual(schedule.next_initial_attempt_ordinal, 2)
+        restored = EventExtractionSchedule.from_manifest(trace(), schedule.manifest())
+        self.assertEqual(restored.prior_candidate_ids, schedule.prior_candidate_ids)
+        self.assertEqual(restored.prior_candidate_summaries[0]["candidate_id"], resolved["candidate_id"])
+
     def test_evolution_uses_retired_event_only_when_a_forwarded_request_proves_injection(self) -> None:
         block = "[CODESKILL EVENT PRIOR KNOWLEDGE]\n" + render_skill(EVENT)
         record = {

@@ -11,15 +11,200 @@ shown.  It never summarizes, redacts, reorders, or merges source steps.
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from typing import Any
 
 
 PROJECTION_VERSION = "manager_projection_v2"
+HISTORICAL_THINKING_POLICY_VERSION = "historical_thinking_policy_v1"
+HISTORICAL_THINKING_POLICIES = frozenset({"keep", "exclude"})
 
 
 class ProjectionError(ValueError):
     pass
+
+
+def validate_historical_thinking_policy(value: Any) -> str:
+    """Return one explicit historical-thinking policy or fail closed."""
+    if not isinstance(value, str) or value not in HISTORICAL_THINKING_POLICIES:
+        raise ProjectionError(
+            "historical thinking policy must be one of: "
+            + ", ".join(sorted(HISTORICAL_THINKING_POLICIES))
+        )
+    return value
+
+
+def _removed_field_record(*, path: str, value: Any, step_id: str, kind: str) -> dict[str, Any]:
+    encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return {
+        "source_step_id": step_id,
+        "raw_path": path,
+        "kind": kind,
+        "sha256": hashlib.sha256(encoded).hexdigest(),
+        "json_bytes": len(encoded),
+    }
+
+
+def _project_historical_step(
+    raw_step: dict[str, Any],
+    *,
+    collection: str,
+    index: int,
+) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
+    """Remove only schema-recognized historical reasoning fields.
+
+    Visible text, tool calls/results, step identity, ordering, usage, and every
+    unrelated field are copied verbatim.  Reasoning-like values with an
+    unknown shape are retained and reported rather than guessed at.
+    """
+    projected = copy.deepcopy(raw_step)
+    step_id = raw_step.get("source_entry_id")
+    if not isinstance(step_id, str) or not step_id:
+        raise ProjectionError(f"{collection}[{index}] has no source_entry_id")
+    removed: list[dict[str, Any]] = []
+    unknown: list[dict[str, Any]] = []
+    content = raw_step.get("content")
+    if not isinstance(content, list):
+        raise ProjectionError(f"step {step_id} has no content blocks")
+    projected_content: list[Any] = []
+    for content_index, item in enumerate(content):
+        path = f"{collection}[{index}].content[{content_index}]"
+        if isinstance(item, dict) and item.get("type") in {"thinking", "reasoning"}:
+            text = item.get("text")
+            if isinstance(text, str) and set(item).issubset({"type", "text"}):
+                removed.append(
+                    _removed_field_record(
+                        path=path,
+                        value=item,
+                        step_id=step_id,
+                        kind=f"content_block:{item['type']}",
+                    )
+                )
+                continue
+            unknown.append(
+                {
+                    "source_step_id": step_id,
+                    "raw_path": path,
+                    "reason": "recognized reasoning block type has an unsupported shape; preserved",
+                }
+            )
+        projected_content.append(copy.deepcopy(item))
+    projected["content"] = projected_content
+
+    for container_name in ("assistant", "assistant_derived_nonduplicate"):
+        container = projected.get(container_name)
+        if not isinstance(container, dict):
+            continue
+        for field in ("thinking", "reasoning"):
+            if field not in container:
+                continue
+            path = f"{collection}[{index}].{container_name}.{field}"
+            value = container[field]
+            if isinstance(value, str) or (
+                isinstance(value, list) and all(isinstance(item, str) for item in value)
+            ):
+                removed.append(
+                    _removed_field_record(
+                        path=path,
+                        value=value,
+                        step_id=step_id,
+                        kind=f"derived_field:{field}",
+                    )
+                )
+                container.pop(field)
+            else:
+                unknown.append(
+                    {
+                        "source_step_id": step_id,
+                        "raw_path": path,
+                        "reason": "recognized reasoning field has an unsupported shape; preserved",
+                    }
+                )
+        if not container:
+            projected.pop(container_name)
+
+    return projected, removed, unknown
+
+
+def project_historical_thinking(
+    trace: dict[str, Any],
+    *,
+    policy: str = "keep",
+) -> dict[str, Any]:
+    """Build the immutable trace's manager-visible historical view.
+
+    ``keep`` is the backward-compatible default and returns an equal deep copy.
+    ``exclude`` removes only explicit thinking/reasoning blocks and derived
+    fields from the manager view.  The raw trace is never mutated, source step
+    IDs are never renumbered, and unknown shapes remain visible with a durable
+    warning so callers cannot claim complete exclusion.
+    """
+    selected = validate_historical_thinking_policy(policy)
+    if not isinstance(trace, dict):
+        raise ProjectionError("normalized trace must be an object")
+    if selected == "keep":
+        return {
+            "policy_version": HISTORICAL_THINKING_POLICY_VERSION,
+            "policy": selected,
+            "manager_trace": copy.deepcopy(trace),
+            "mapping": {
+                "policy_version": HISTORICAL_THINKING_POLICY_VERSION,
+                "policy": selected,
+                "recognized_fields_removed": [],
+                "unrecognized_reasoning_like_fields": [],
+                "exclusion_complete_for_recognized_schema": True,
+            },
+        }
+
+    raw_steps = trace.get("steps")
+    if not isinstance(raw_steps, list):
+        raise ProjectionError("normalized trace has no steps list")
+    manager_trace = copy.deepcopy(trace)
+    projected_steps: list[dict[str, Any]] = []
+    removed: list[dict[str, Any]] = []
+    unknown: list[dict[str, Any]] = []
+    for index, raw_step in enumerate(raw_steps):
+        if not isinstance(raw_step, dict):
+            raise ProjectionError(f"steps[{index}] is not an object")
+        step, step_removed, step_unknown = _project_historical_step(
+            raw_step,
+            collection="steps",
+            index=index,
+        )
+        projected_steps.append(step)
+        removed.extend(step_removed)
+        unknown.extend(step_unknown)
+    manager_trace["steps"] = projected_steps
+
+    entries = trace.get("entries")
+    if isinstance(entries, list):
+        projected_entries: list[dict[str, Any]] = []
+        for index, raw_entry in enumerate(entries):
+            if not isinstance(raw_entry, dict):
+                raise ProjectionError(f"entries[{index}] is not an object")
+            entry, entry_removed, entry_unknown = _project_historical_step(
+                raw_entry,
+                collection="entries",
+                index=index,
+            )
+            projected_entries.append(entry)
+            removed.extend(entry_removed)
+            unknown.extend(entry_unknown)
+        manager_trace["entries"] = projected_entries
+
+    return {
+        "policy_version": HISTORICAL_THINKING_POLICY_VERSION,
+        "policy": selected,
+        "manager_trace": manager_trace,
+        "mapping": {
+            "policy_version": HISTORICAL_THINKING_POLICY_VERSION,
+            "policy": selected,
+            "recognized_fields_removed": removed,
+            "unrecognized_reasoning_like_fields": unknown,
+            "exclusion_complete_for_recognized_schema": not unknown,
+        },
+    }
 
 
 def assistant_tool_calls(step: dict[str, Any]) -> list[dict[str, Any]]:

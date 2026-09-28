@@ -6,6 +6,7 @@
   "type": "module",
   "files": [
     "index.js",
+    "lifecycle-record.js",
     "openclaw.plugin.json",
     "README.md"
   ],

@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "kind": "r015_c_only_gpu202_current_readonly",
+  "snapshot_id": "r015-c-only-<MODEL_SERVICE_HOST>-job-501-20260914-current-readonly",
+  "captured_at_utc": "2026-09-13T17:29:34Z",
+  "scope": "read-only Slurm/process/port/model-endpoint state refresh; no model request, Harbor solver, verifier, or formal campaign",
+  "host": {
+    "ssh_alias": "<MODEL_SERVICE_HOST>",
+    "hostname": "esc8ka-e13p",
+    "user": "<REMOTE_USER>",
+    "node": "esc8ka-e13p"
+  },
+  "job": {
+    "job_id": "501",
+    "name": "dsv4-9b-tb21",
+    "owner": "<REMOTE_USER>",
+    "state": "RUNNING",
+    "runtime": "2-02:25:37",
+    "time_limit": "3-00:00:00",
+    "time_left": "21:34:23",
+    "time_left_seconds": 77663,
+    "start_time_utc": "2026-09-11T23:03:57Z",
+    "end_time_utc": "2026-09-14T23:03:57Z",
+    "command": "<REMOTE_USER_HOME>/deepseek-3fs/scripts/dsv4-9b-tb21-server.sbatch",
+    "workdir": "<REMOTE_USER_HOME>/deepseek-3fs",
+    "stdout": "<REMOTE_USER_HOME>/deepseek-3fs/logs/dsv4-9b-tb21-501.log",
+    "requested_gpus": 2
+  },
+  "r015_processes": [],
+  "serving": {
+    "ports": [
+      {
+        "port": 31000,
+        "pid": 2749212,
+        "model": "deepseek-ai/DeepSeek-V4-Flash",
+        "max_model_len": 524288,
+        "status": "LISTEN"
+      },
+      {
+        "port": 30002,
+        "pid": 2750399,
+        "model": "Qwen/Qwen3.5-9B",
+        "max_model_len": 262144,
+        "status": "LISTEN"
+      }
+    ],
+    "models_endpoint": {
+      "main": {
+        "url": "http://127.0.0.1:31000/v1/models",
+        "http_status": 200,
+        "model_id": "deepseek-ai/DeepSeek-V4-Flash",
+        "max_model_len": 524288
+      },
+      "summary": {
+        "url": "http://127.0.0.1:30002/v1/models",
+        "http_status": 200,
+        "model_id": "Qwen/Qwen3.5-9B",
+        "max_model_len": 262144
+      }
+    },
+    "readiness_probe_rerun": false
+  },
+  "capacity_assessment": {
+    "runtime_estimate_path": "docs/evidence/r015-c-only-runtime-estimate-20260913-final.json",
+    "planning_estimate_hours": [
+      4.0,
+      11.8896723412
+    ],
+    "time_left_hours": 21.573055555555555,
+    "planning_upper_fits": true,
+    "hard_timeout_envelope_hours": 41.8736515228,
+    "hard_timeout_envelope_fits": false,
+    "hard_envelope_is_completion_guarantee": false,
+    "replacement_job_submitted": false,
+    "decision": "Job 501 remains RUNNING and both serving endpoints return HTTP 200. Its remaining time exceeds the planning estimate but not the conservative hard envelope; refresh immediately before any formal start."
+  },
+  "raw_observation": {
+    "path": "docs/evidence/r015-c-only-<MODEL_SERVICE_HOST>-job-501-20260914-current-readonly.txt",
+    "sha256": "204a70b794ca625cb5c1f4ab0903e45612f346971876e80677dd95e347835ad4",
+    "size_bytes": 3826
+  },
+  "formal_campaign_started": false
+}

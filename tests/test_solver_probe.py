@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import importlib.util
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -70,6 +72,18 @@ class SolverProbeTest(unittest.TestCase):
         self.assertEqual(counter.last_exchange["count"], 37)
         self.assertEqual(counter.last_exchange["scope"], "complete_openai_payload_plus_generation_marker")
 
+    def test_counter_adapts_streaming_payload_and_accepts_sglang_tokens_response(self) -> None:
+        counter = ServerPayloadTokenCounter("http://example.invalid/v1", timeout_seconds=60)
+        payload = synthetic_payload()
+        payload["stream"] = True
+        with patch("codeskill_rebuild.solver_probe.urlopen", return_value=FakeResponse({"tokens": [11, 22, 33]})) as opened:
+            self.assertEqual(counter(payload), 3)
+        sent = json.loads(opened.call_args.args[0].data.decode("utf-8"))
+        self.assertFalse(sent["stream"])
+        self.assertEqual(counter.last_exchange["original_request"]["stream"], True)
+        self.assertEqual(counter.last_exchange["request_adjustments"][0]["field"], "stream")
+        self.assertEqual(counter.last_exchange["count_source"], "tokens_length")
+
     def test_probe_reserves_and_finalizes_one_global_ledger_call_after_matching_usage(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -114,6 +128,26 @@ class SolverProbeTest(unittest.TestCase):
             preflight = json.loads((root / "run" / "model_calls" / "call-0001" / "preflight.json").read_text())
         self.assertEqual(preflight["classification"], "tokenizer_unavailable")
         self.assertFalse((root / "ledger.json").exists())
+
+    def test_source_only_archive_snapshot_requires_and_records_the_declared_revision(self) -> None:
+        script = Path(__file__).resolve().parents[1] / "scripts" / "run_m3_full_payload_tokenizer_probe.py"
+        spec = importlib.util.spec_from_file_location("m3_probe_runner", script)
+        assert spec and spec.loader
+        runner = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(runner)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "source" / "marker.txt").parent.mkdir(parents=True)
+            (root / "source" / "marker.txt").write_text("archive fixture", encoding="utf-8")
+            with patch.dict(os.environ, {"CODESKILL_SOURCE_REVISION": "fixture-cdebcf8"}, clear=False):
+                snapshot = runner.capture_source_snapshot(
+                    project_root=root / "source",
+                    run_dir=root / "run",
+                    relative_paths=["marker.txt"],
+                )
+        self.assertEqual(snapshot["head"], "archive:fixture-cdebcf8")
+        self.assertEqual(snapshot["provenance"]["kind"], "source_only_archive")
+        self.assertTrue(snapshot["provenance"]["git_metadata_unavailable"])
 
 
 if __name__ == "__main__":

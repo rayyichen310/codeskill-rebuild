@@ -45,6 +45,35 @@ class EventExtractionSchedule:
         if len(self.attempts) > MAX_INITIAL_EVENT_EXTRACTION_ATTEMPTS:
             raise EventExtractionScheduleError("initial event attempts exceed the R012 maximum of three")
 
+    @classmethod
+    def from_manifest(cls, trace: dict[str, Any], value: dict[str, Any]) -> "EventExtractionSchedule":
+        """Restore a durable schedule without reissuing any recorded call.
+
+        A continuation must use this instead of reconstructing schedules from
+        source traces: prior candidates affect the next prompt and a rejected
+        initial call still consumes its one exploration slot.
+        """
+        if not isinstance(value, dict) or value.get("kind") != "r012_event_extraction_schedule":
+            raise EventExtractionScheduleError("invalid R012 event extraction schedule manifest")
+        attempts = value.get("attempts")
+        retries = value.get("retry_records")
+        references = value.get("source_run_references")
+        if not isinstance(attempts, list) or not isinstance(retries, list) or not isinstance(references, list):
+            raise EventExtractionScheduleError("schedule manifest has invalid lists")
+        restored = cls(
+            trace=trace,
+            source_run_references=deepcopy(references),
+            attempts=deepcopy(attempts),
+            retry_records=deepcopy(retries),
+        )
+        stated_source = value.get("source_instance_id")
+        if not isinstance(stated_source, str) or canonical_instance_id(stated_source) != restored.source_instance_id:
+            raise EventExtractionScheduleError("schedule manifest source differs from trace")
+        ordinals = [item.get("initial_attempt_ordinal") for item in restored.attempts if isinstance(item, dict)]
+        if ordinals != list(range(1, len(restored.attempts) + 1)):
+            raise EventExtractionScheduleError("schedule manifest initial attempts must be contiguous")
+        return restored
+
     @property
     def stop_reason(self) -> str | None:
         for attempt in self.attempts:
@@ -67,7 +96,7 @@ class EventExtractionSchedule:
         """Compact content plus evidence references for attempt two/three."""
         values: list[dict[str, Any]] = []
         for attempt in self.attempts:
-            if attempt.get("outcome") != "generated" or not isinstance(attempt.get("candidate_id"), str):
+            if attempt.get("outcome") not in {"generated", "repaired_generated"} or not isinstance(attempt.get("candidate_id"), str):
                 continue
             result = attempt.get("result")
             skill = result.get("skill") if isinstance(result, dict) else None
@@ -207,6 +236,71 @@ class EventExtractionSchedule:
         }
         self.retry_records.append(record)
         return deepcopy(record)
+
+    def resolve_evidence_only_repair(
+        self,
+        *,
+        retry_of: dict[str, Any],
+        model_call_id: str | None,
+        repaired_result: dict[str, Any],
+        evidence: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Resolve exactly one rejected initial output through a sidecar repair.
+
+        The original manager call already consumed its initial exploration
+        ordinal.  A successful repair may attach evidence to that same output
+        without creating a fictional additional Fig.7 attempt.  The repair
+        itself remains a separate retry record and must preserve the original
+        skill object exactly (validated by the caller).
+        """
+        if retry_of.get("kind") != "r012_initial_event_extraction_attempt" or retry_of.get("outcome") != "failure":
+            raise EventExtractionScheduleError("evidence-only repair requires a recorded failed initial attempt")
+        try:
+            index = self.attempts.index(retry_of)
+        except ValueError as error:
+            raise EventExtractionScheduleError("repair target is not this schedule's recorded failure") from error
+        if not isinstance(repaired_result, dict) or repaired_result.get("action") not in {"generate", "skip"}:
+            raise EventExtractionScheduleError("repaired result must be a validated generate or skip object")
+        retry = self.record_retry(
+            retry_of=retry_of,
+            retry_kind="evidence_only_sidecar_repair",
+            model_call_id=model_call_id,
+            evidence=evidence,
+        )
+        attempt = self.attempts[index]
+        fingerprint = _candidate_fingerprint(repaired_result)
+        other_fingerprints = {
+            str(item["candidate_fingerprint"])
+            for position, item in enumerate(self.attempts)
+            if position != index and isinstance(item, dict) and item.get("candidate_fingerprint")
+        }
+        if repaired_result["action"] == "skip":
+            outcome = "skip"
+            candidate_id = None
+        elif fingerprint in other_fingerprints:
+            outcome = "duplicate"
+            candidate_id = None
+        else:
+            outcome = "repaired_generated"
+            candidate_id = f"event:{self.source_instance_id}:initial:{attempt['initial_attempt_ordinal']}:{fingerprint[:16]}"
+        attempt.update(
+            {
+                "outcome": outcome,
+                "result": deepcopy(repaired_result),
+                "candidate_fingerprint": fingerprint,
+                "candidate_id": candidate_id,
+                "repair_resolution": {
+                    "kind": "r012_evidence_only_sidecar_repair_resolution",
+                    "retry_model_call_id": model_call_id,
+                    "retry_record": deepcopy(retry),
+                    "original_model_call_id": attempt.get("model_call_id"),
+                    "original_validation_error": attempt.get("error"),
+                    "initial_attempt_count_unchanged": len(self.attempts),
+                },
+            }
+        )
+        attempt["stop_reason_after_attempt"] = self.stop_reason
+        return deepcopy(attempt)
 
     def manifest(self) -> dict[str, Any]:
         return {

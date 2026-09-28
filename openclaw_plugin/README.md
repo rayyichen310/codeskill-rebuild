@@ -12,7 +12,8 @@
 `expected_session_id` 必須完全相同。
 
 1. 每個一般 solver stream call 會先經公開 provider `wrapStreamFn`，同步以 temp-file +
-   rename 寫入 mode `0600` 的 normal-call boundary。它是正向的「這是一般 call」證據，
+   rename 寫入 mode `0640` 的 normal-call boundary；setgid permit directory 讓 container
+   producer 與 host sidecar 共享既有 GID，但不開放給 other users。它是正向的「這是一般 call」證據，
    不讀 prompt、訊息 role、token 數或 request 外型。
 2. OpenClaw 觸發公開 `before_compaction` hook 時，plugin 同步寫入同一 session 的短效
    permit；內容只有 trial、session、時間和隨機 nonce。
@@ -38,14 +39,14 @@ plugin 與 gate 不會從 native summary 擷取、摘要或另存欄位；不過
 ## 安裝
 
 以下示例把 extension 放在 OpenClaw state 以外的受控目錄。目錄與 permit directory
-都只能由執行 OpenClaw 和 CODESKILL 的同一個 OS 帳號存取。
+由 OpenClaw producer 與 CODESKILL sidecar 的共享 GID 存取，不要求兩者使用同一 UID。
 
 ```bash
 install -d -m 755 /opt/codeskill/openclaw-sidecar
-cp index.js openclaw.plugin.json package.json README.md /opt/codeskill/openclaw-sidecar/
+cp index.js lifecycle-record.js openclaw.plugin.json package.json README.md /opt/codeskill/openclaw-sidecar/
 cd /opt/codeskill/openclaw-sidecar
 npm install --omit=dev --ignore-scripts
-install -d -m 700 /var/lib/codeskill/native-summary-permits/session-123
+install -d -m 2770 /var/lib/codeskill/native-summary-permits/session-123
 ```
 
 `package.json` 的 peer range 是套件安裝相容宣告，**不是**已驗證版本清單。目前唯一經過
@@ -166,8 +167,8 @@ PYTHONPATH=src python3 scripts/run_m3_r012_lifecycle.py freeze \
   --instance-id terminal-bench/<FROZEN-INSTANCE> \
   --repeat <FROZEN-REPEAT> \
   --arm-bank full=/var/lib/codeskill/banks/full.json \
-  --spec docs/REPRODUCTION_SPEC.md \
-  --decisions docs/RESEARCH_DECISIONS.md
+  --spec docs/archive/REPRODUCTION_SPEC.md \
+  --decisions docs/archive/RESEARCH_DECISIONS.md
 ```
 
 從 lifecycle state 的該 `trial_id` assignment 取得 `frozen_bank.state_sha256`，並以

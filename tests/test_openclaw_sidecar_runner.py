@@ -170,6 +170,29 @@ class OpenClawSidecarRunnerTest(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn(expected, result.stderr)
 
+    def test_check_config_accepts_a_distinct_container_advertised_host(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            config = self.fixture_config(directory)
+            config["listen"] = {"host": "0.0.0.0", "advertisedHost": "172.17.0.1", "port": 18080}
+            openclaw = Path(config["openclaw"]["configPath"])  # type: ignore[index]
+            value = json.loads(openclaw.read_text(encoding="utf-8"))
+            value["models"]["providers"]["codeskill-r012"]["baseUrl"] = "http://172.17.0.1:18080/v1"
+            openclaw.write_text(json.dumps(value), encoding="utf-8")
+            config_path = directory / "sidecar.json"
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+            environment = dict(os.environ)
+            environment["PYTHONPATH"] = str(root / "src")
+            result = subprocess.run(
+                [sys.executable, str(root / "scripts" / "run_openclaw_r012_sidecar.py"), "--config", str(config_path), "--check-config"],
+                text=True,
+                capture_output=True,
+                env=environment,
+                check=False,
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -32,10 +32,13 @@ class PayloadTokenizationError(PayloadProbeError):
 class ServerPayloadTokenCounter:
     """Count a complete OpenAI solver payload through the serving endpoint.
 
-    The only added field is ``add_generation_prompt``.  It asks SGLang to
-    render the same next-assistant boundary that chat completion will render;
-    every original payload field, especially ``tools`` and ``tool_choice``, is
-    retained verbatim and the exchange is kept for audit.
+    ``add_generation_prompt`` asks SGLang to render the same next-assistant
+    boundary that chat completion will render.  SGLang's ``/tokenize`` route
+    rejects a streaming request, so the transport copy sets ``stream`` to
+    ``False`` when needed; the original solver payload and this bounded
+    compatibility adjustment are both retained in the exchange for audit.
+    Every other original payload field, especially ``tools`` and
+    ``tool_choice``, is retained verbatim.
     """
 
     method = "sglang_full_openai_payload_tokenize_v1"
@@ -50,8 +53,20 @@ class ServerPayloadTokenCounter:
     def __call__(self, payload: dict[str, Any]) -> int:
         if not isinstance(payload, dict) or not isinstance(payload.get("messages"), list):
             raise PayloadTokenizationError("full payload tokenizer requires an OpenAI messages list")
+        original_payload = deepcopy(payload)
         token_payload = deepcopy(payload)
         token_payload["add_generation_prompt"] = True
+        request_adjustments: list[dict[str, Any]] = []
+        if token_payload.get("stream") is True:
+            token_payload["stream"] = False
+            request_adjustments.append(
+                {
+                    "field": "stream",
+                    "original": True,
+                    "sent": False,
+                    "reason": "SGLang /tokenize rejects streaming requests",
+                }
+            )
         request = Request(
             self.base_url + "/tokenize",
             data=json.dumps(token_payload).encode("utf-8"),
@@ -77,15 +92,32 @@ class ServerPayloadTokenCounter:
             "endpoint": self.base_url + "/tokenize",
             "scope": "complete_openai_payload_plus_generation_marker",
             "request": token_payload,
+            "original_request": original_payload,
+            "request_adjustments": request_adjustments,
             "http_status": status,
             "elapsed_seconds": time.monotonic() - started,
             "raw_response": raw,
             "parsed_response": parsed,
         }
-        if status != 200 or not isinstance(parsed, dict) or isinstance(parsed.get("count"), bool) or not isinstance(parsed.get("count"), int):
+        count: int | None = None
+        count_source: str | None = None
+        if status == 200 and isinstance(parsed, dict):
+            raw_count = parsed.get("count")
+            if isinstance(raw_count, int) and not isinstance(raw_count, bool) and raw_count >= 0:
+                count = raw_count
+                count_source = "count"
+            else:
+                tokens = parsed.get("tokens")
+                if isinstance(tokens, list) and all(
+                    isinstance(token, int) and not isinstance(token, bool) for token in tokens
+                ):
+                    count = len(tokens)
+                    count_source = "tokens_length"
+        if count is None:
             raise PayloadTokenizationError("complete-payload /tokenize failed; raw exchange is preserved")
-        self.last_exchange["count"] = parsed["count"]
-        return parsed["count"]
+        self.last_exchange["count"] = count
+        self.last_exchange["count_source"] = count_source
+        return count
 
 
 @dataclass(frozen=True)

@@ -14,6 +14,7 @@ from copy import deepcopy
 from pathlib import Path
 import re
 import sqlite3
+from time import sleep
 from typing import Any
 
 from .native_compaction_common import NativeCompactionEvidenceError, read_json_line
@@ -21,6 +22,26 @@ from .types import canonical_json, read_json, sha256_text, utc_now, write_json
 
 
 SessionLocationProvider = Callable[[], dict[str, Any] | None]
+
+# Harbor may create the bind-mounted OpenClaw state directory from inside the
+# task container immediately before the first provider request.  During that
+# short handoff the host-side sidecar can observe a temporarily inaccessible
+# ancestor while Docker/OpenClaw settles ownership and mode bits.  Keep the
+# marker canonicalization fail-closed, but allow this bounded startup race to
+# settle; a persistent denial still raises evidence failure.
+_LOCATION_RESOLVE_ATTEMPTS = 30
+_LOCATION_RESOLVE_DELAY_SECONDS = 0.1
+# The official task container may create the SQLite file as root and hand its
+# bind-mounted state back to the task user several seconds later.  The live
+# R015 runs measured both a 4.5-second handoff and a handoff just beyond 12
+# seconds; retain a bounded, fail-closed window with practical headroom.
+_DATABASE_OPEN_ATTEMPTS = 300
+_DATABASE_OPEN_DELAY_SECONDS = 0.1
+# A pre-seeded user-owned file can be visible before the official OpenClaw
+# bootstrap has installed transcript_events.  Retry only this known schema
+# initialization race; all other query errors remain evidence failures.
+_DATABASE_SCHEMA_ATTEMPTS = 300
+_DATABASE_SCHEMA_DELAY_SECONDS = 0.1
 
 
 def _normalize_agent_id(value: str | None) -> str:
@@ -75,6 +96,99 @@ def _resolve_database_path(store_path: Path, *, agent_id: str) -> Path:
     return (sessions_dir / f"{sqlite_stem}.sqlite").resolve()
 
 
+def _resolve_store_path(store_path_text: str) -> Path:
+    """Canonicalize a live marker path across the container ownership handoff."""
+    path = Path(store_path_text)
+    last_error: PermissionError | None = None
+    for attempt in range(_LOCATION_RESOLVE_ATTEMPTS):
+        try:
+            return path.resolve()
+        except PermissionError as error:
+            last_error = error
+            if attempt + 1 < _LOCATION_RESOLVE_ATTEMPTS:
+                sleep(_LOCATION_RESOLVE_DELAY_SECONDS)
+    assert last_error is not None
+    raise NativeCompactionEvidenceError(
+        "cannot resolve native SQLite store path after "
+        f"{_LOCATION_RESOLVE_ATTEMPTS} attempts: {path}: {last_error}"
+    ) from last_error
+
+
+def _open_read_only_database(database_path: Path) -> sqlite3.Connection:
+    """Open the live database after the container has created its SQLite file.
+
+    The sidecar observes the host bind mount while OpenClaw is still creating
+    its agent database.  The directory can therefore exist before the file,
+    or SQLite can briefly reject a file while its schema/WAL is being opened.
+    Retry only within this short startup window; a persistent failure remains
+    a hard evidence error and never turns into an empty transcript.
+    """
+    last_error: OSError | sqlite3.Error | None = None
+    for attempt in range(_DATABASE_OPEN_ATTEMPTS):
+        try:
+            if not database_path.exists():
+                raise FileNotFoundError(2, "No such file or directory", str(database_path))
+            if not database_path.is_file():
+                raise OSError(22, "native SQLite database is not a regular file", str(database_path))
+            return sqlite3.connect(f"{database_path.as_uri()}?mode=ro", uri=True, timeout=1)
+        except (OSError, sqlite3.Error) as error:
+            last_error = error
+            if attempt + 1 < _DATABASE_OPEN_ATTEMPTS:
+                sleep(_DATABASE_OPEN_DELAY_SECONDS)
+    assert last_error is not None
+    if isinstance(last_error, FileNotFoundError):
+        raise NativeCompactionEvidenceError(f"native SQLite database does not exist: {database_path}") from last_error
+    if isinstance(last_error, OSError) and last_error.errno == 22 and "not a regular file" in str(last_error):
+        raise NativeCompactionEvidenceError(f"native SQLite database is not a regular file: {database_path}") from last_error
+    raise NativeCompactionEvidenceError(
+        "cannot open native SQLite database read-only after "
+        f"{_DATABASE_OPEN_ATTEMPTS} attempts: {database_path}: {last_error}"
+    ) from last_error
+
+
+def _read_transcript_rows(database_path: Path, session_id: str) -> list[tuple[Any, Any]]:
+    """Read transcript rows while the official schema is being installed.
+
+    The launcher seeds a user-owned empty inode so the official container
+    cannot create a root-owned database.  SQLite can open that inode before
+    OpenClaw's schema transaction creates ``transcript_events``.  Reopen the
+    read-only connection between bounded retries so a later schema commit is
+    observed; do not turn any other database error into an empty transcript.
+    """
+    last_error: sqlite3.Error | None = None
+    for attempt in range(_DATABASE_SCHEMA_ATTEMPTS):
+        connection: sqlite3.Connection | None = None
+        try:
+            connection = _open_read_only_database(database_path)
+            connection.execute("PRAGMA query_only = ON")
+            return connection.execute(
+                "SELECT seq, event_json FROM transcript_events WHERE session_id = ? ORDER BY seq ASC",
+                (session_id,),
+            ).fetchall()
+        except sqlite3.OperationalError as error:
+            # Only the schema-not-yet-installed error is retryable.  A
+            # malformed database, lock, or permission error must fail closed.
+            if "no such table: transcript_events" not in str(error).lower():
+                raise NativeCompactionEvidenceError(
+                    f"cannot read native SQLite transcript_events for session {session_id}: {error}"
+                ) from error
+            last_error = error
+        except sqlite3.Error as error:
+            raise NativeCompactionEvidenceError(
+                f"cannot read native SQLite transcript_events for session {session_id}: {error}"
+            ) from error
+        finally:
+            if connection is not None:
+                connection.close()
+        if attempt + 1 < _DATABASE_SCHEMA_ATTEMPTS:
+            sleep(_DATABASE_SCHEMA_DELAY_SECONDS)
+    assert last_error is not None
+    raise NativeCompactionEvidenceError(
+        "cannot read native SQLite transcript_events after "
+        f"{_DATABASE_SCHEMA_ATTEMPTS} schema attempts for session {session_id}: {last_error}"
+    ) from last_error
+
+
 def _normalise_location(value: dict[str, Any] | None) -> dict[str, Any] | None:
     if value is None:
         return None
@@ -91,7 +205,7 @@ def _normalise_location(value: dict[str, Any] | None) -> dict[str, Any] | None:
         raise NativeCompactionEvidenceError("native SQLite session marker is malformed")
     raw_agent_id, session_id, store_path_text = parts[1:]
     agent_id = _normalize_agent_id(raw_agent_id)
-    store_path = Path(store_path_text).resolve()
+    store_path = _resolve_store_path(store_path_text)
     database_path = _resolve_database_path(store_path, agent_id=agent_id)
     return {
         "session_file": marker,
@@ -140,26 +254,7 @@ def _validated_compaction(
 def _read_compactions(location: dict[str, Any]) -> list[dict[str, Any]]:
     database_path = Path(location["database_path"])
     session_id = location["session_id"]
-    if not database_path.exists():
-        raise NativeCompactionEvidenceError(f"native SQLite database does not exist: {database_path}")
-    if not database_path.is_file():
-        raise NativeCompactionEvidenceError(f"native SQLite database is not a regular file: {database_path}")
-    try:
-        connection = sqlite3.connect(f"{database_path.as_uri()}?mode=ro", uri=True, timeout=1)
-    except (OSError, sqlite3.Error) as error:
-        raise NativeCompactionEvidenceError(f"cannot open native SQLite database read-only: {database_path}: {error}") from error
-    try:
-        connection.execute("PRAGMA query_only = ON")
-        rows = connection.execute(
-            "SELECT seq, event_json FROM transcript_events WHERE session_id = ? ORDER BY seq ASC",
-            (session_id,),
-        ).fetchall()
-    except sqlite3.Error as error:
-        raise NativeCompactionEvidenceError(
-            f"cannot read native SQLite transcript_events for session {session_id}: {error}"
-        ) from error
-    finally:
-        connection.close()
+    rows = _read_transcript_rows(database_path, session_id)
 
     previous_seq = -1
     compactions: list[dict[str, Any]] = []
@@ -240,6 +335,7 @@ class SqliteTranscriptCompactionDetector:
                 "database_path": location["database_path"],
                 "seen": {},
                 "seen_by_seq": {},
+                "seq_relocations": [],
             }
             self.state["tracked_sessions"][session_key] = tracked
         elif (
@@ -253,10 +349,46 @@ class SqliteTranscriptCompactionDetector:
         if not isinstance(seen, dict) or not isinstance(seen_by_seq, dict):
             raise NativeCompactionEvidenceError("native SQLite compaction detector state has invalid seen records")
         current_by_seq = {str(record["seq"]): record for record in compactions}
-        for seq, old_hash in seen_by_seq.items():
+        for seq, old_hash in list(seen_by_seq.items()):
             current = current_by_seq.get(seq)
             if current is None:
-                raise NativeCompactionEvidenceError(f"native SQLite compaction seq={seq} disappeared after it was observed")
+                # OpenClaw's native compaction rewrites the transcript table
+                # and can renumber a retained compaction row.  Preserve the
+                # strict identity check while accepting only an unchanged
+                # compaction id/hash at a different sequence number.  A
+                # missing row without that exact replacement remains a hard
+                # evidence failure.
+                relocated = [
+                    record
+                    for record in compactions
+                    if record["entry_sha256"] == old_hash
+                    and record["compaction_id"] in seen
+                    and seen[record["compaction_id"]] == old_hash
+                ]
+                if len(relocated) != 1:
+                    raise NativeCompactionEvidenceError(
+                        f"native SQLite compaction seq={seq} disappeared after it was observed"
+                    )
+                replacement = relocated[0]
+                replacement_seq = str(replacement["seq"])
+                if replacement_seq in seen_by_seq and replacement_seq != seq:
+                    raise NativeCompactionEvidenceError(
+                        f"native SQLite compaction sequence relocation collides at seq={replacement_seq}"
+                    )
+                del seen_by_seq[seq]
+                seen_by_seq[replacement_seq] = old_hash
+                relocations = tracked.setdefault("seq_relocations", [])
+                if not isinstance(relocations, list):
+                    raise NativeCompactionEvidenceError("native SQLite compaction detector has invalid sequence relocations")
+                relocations.append(
+                    {
+                        "compaction_id": replacement["compaction_id"],
+                        "entry_sha256": old_hash,
+                        "from_seq": int(seq),
+                        "to_seq": replacement["seq"],
+                    }
+                )
+                continue
             if current["entry_sha256"] != old_hash:
                 raise NativeCompactionEvidenceError(f"native SQLite compaction seq={seq} changed after it was observed")
         for record in compactions:

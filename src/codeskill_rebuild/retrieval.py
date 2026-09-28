@@ -203,7 +203,22 @@ class MiniLMEncoder:
         return self.encode([record["text"]])[0], record
 
 
+def score_candidates(
+    query_vector: list[float],
+    skills: list[dict[str, Any]],
+    vectors: list[list[float]],
+) -> list[dict[str, Any]]:
+    """Score every eligible candidate before any threshold or limit is applied."""
+    scored = []
+    for skill, vector in zip(skills, vectors, strict=True):
+        score = cosine(query_vector, vector)
+        scored.append({"skill": skill, "score": score, "index_text": skill_index_text(skill)})
+    return sorted(scored, key=lambda item: (-item["score"], item["skill"]["skill_id"]))
+
+
 def rank(query_vector: list[float], skills: list[dict[str, Any]], vectors: list[list[float]], threshold: float, limit: int) -> list[dict[str, Any]]:
+    # Keep the historical selection path independent from the new diagnostic
+    # ordering so metadata cannot change which skills are returned.
     scored = []
     for skill, vector in zip(skills, vectors, strict=True):
         score = cosine(query_vector, vector)
